@@ -1,16 +1,13 @@
 package revip
 
 import (
-	"testing"
-	"fmt"
 	"bytes"
+	"testing"
 
-	//"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRevip(t *testing.T) {
-	// bash -c 'REVIP_BAZ=777 REVIP_FOO_BAR=qux REVIP_DOX=1,2,3 go test -v ./...'
-
 	type Foo struct {
 		Bar string
 		Qux bool
@@ -21,7 +18,7 @@ func TestRevip(t *testing.T) {
 		Dox []string
 		Box []int
 	}
-	config := Config{
+	c := Config{
 		Foo: Foo{
 			Bar: "bar",
 			Qux: true,
@@ -29,8 +26,8 @@ func TestRevip(t *testing.T) {
 		Baz: 666,
 	}
 
-	err := Unmarshal(
-		&config,
+	r, err := Unmarshal(
+		&c,
 		FromReader(
 			bytes.NewBuffer([]byte(`foo: { qux: false }`)),
 			YamlUnmarshaler,
@@ -44,6 +41,58 @@ func TestRevip(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("-- %#v\n", config)
-	// -- revip.Config{Foo:revip.Foo{Bar:"qux", Qux:false}, Baz:777, Dox:[]string{"1", "2", "3"}, Box:[]int{666, 777, 888}}
+
+	assert.Equal(
+		t,
+		Config{
+			Foo: Foo{Bar: "bar", Qux: false},
+			Baz: 666,
+			Box: []int{666, 777, 888},
+		},
+		c,
+	)
+
+	//
+
+	cc := Config{}
+	err = r.Config(&cc)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(
+		t,
+		Config{
+			Foo: Foo{Bar: "bar", Qux: false},
+			Baz: 666,
+			Box: []int{666, 777, 888},
+		},
+		cc,
+	)
+
+	//
+
+	fv := Foo{}
+	err = r.Path(&fv, "Foo")
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(
+		t,
+		Foo{Bar: "bar", Qux: false},
+		fv,
+	)
+
+	fvv := new(bool)
+	err = r.Path(fvv, "Foo.Qux")
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(
+		t,
+		"bar",
+		*fvv,
+	)
 }
