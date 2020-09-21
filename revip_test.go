@@ -26,7 +26,7 @@ func TestRevip(t *testing.T) {
 		Baz: 666,
 	}
 
-	r, err := Unmarshal(
+	r, err := Load(
 		&c,
 		FromReader(
 			bytes.NewBuffer([]byte(`foo: { qux: false }`)),
@@ -41,33 +41,14 @@ func TestRevip(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	assert.Equal(
 		t,
 		Config{
-			Foo: Foo{Bar: "bar", Qux: false},
-			Baz: 666,
+			Foo: Foo{Bar: "qux", Qux: false},
+			Baz: 777,
 			Box: []int{666, 777, 888},
 		},
 		c,
-	)
-
-	//
-
-	cc := Config{}
-	err = r.Config(&cc)
-	if err != nil {
-		t.Error(err)
-	}
-
-	assert.Equal(
-		t,
-		Config{
-			Foo: Foo{Bar: "bar", Qux: false},
-			Baz: 666,
-			Box: []int{666, 777, 888},
-		},
-		cc,
 	)
 
 	//
@@ -77,22 +58,22 @@ func TestRevip(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	assert.Equal(
 		t,
-		Foo{Bar: "bar", Qux: false},
+		Foo{Bar: "qux", Qux: false},
 		fv,
 	)
+
+	//
 
 	fvv := new(bool)
 	err = r.Path(fvv, "Foo.Qux")
 	if err != nil {
 		t.Error(err)
 	}
-
 	assert.Equal(
 		t,
-		"bar",
+		bool(false),
 		*fvv,
 	)
 }
