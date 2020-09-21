@@ -2,6 +2,16 @@
 
 Dead-simple configuration loader.
 
+It supports:
+
+- JSON, TOML, YAML and you could add your own format unmarshaler (see `Unmarshaler` type)
+- file, reader and environment sources support, also you could add your own (see `Source` type)
+- JSON-path support
+
+[Godoc](https://godoc.org/github.com/corpix/revip)
+
+---
+
 Usage example:
 
 ```go
