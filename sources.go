@@ -1,8 +1,8 @@
 package revip
 
 import (
-	"io/ioutil"
 	"io"
+	"io/ioutil"
 	"os"
 	"syscall"
 
@@ -37,7 +37,7 @@ func FromFile(path string, f Unmarshaler) Source {
 			if e.Err == syscall.ENOENT {
 				return &ErrFileNotFound{
 					Path: path,
-					Orig: err,
+					Err:  err,
 				}
 			}
 		case nil:

@@ -12,7 +12,19 @@ import (
 // Config is a configuration represented by user-specified type.
 type Config = interface{}
 
-// Revip represents loaded by `Load` configuration.
+// Validatable is an interface which any `Config` key could implement
+// to define a validation rules for sub-tree it owns.
+type Validatable interface {
+	Validate() error
+}
+
+// Defaultable is an interface which any `Config` key could implement
+// to define a custom default values for sub-tree it owns.
+type Defaultable interface {
+	Default()
+}
+
+// Revip represents configuration loaded by `Load`.
 type Revip struct {
 	// config represents configuration data, it should always be a pointer.
 	config Config
