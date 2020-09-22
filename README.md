@@ -12,7 +12,7 @@ It supports:
 
 ---
 
-Usage example:
+### example
 
 ```go
 package main
@@ -88,7 +88,7 @@ func main() {
 }
 ```
 
-Run example:
+### run
 
 ```console
 user@localhost> go run ./example/main.go
