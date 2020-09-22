@@ -2,9 +2,9 @@
     "mounts": {
         "rw": [
             ".", "~/.emacs.d",
-	    ["./.cache",  "~/.cache"],
-	    ["./.config", "~/.config"],
-	    ["./.local",  "~/.local"],
+	    ["./.cache",  "~/.cache", "d"],
+	    ["./.config", "~/.config", "d"],
+	    ["./.local",  "~/.local", "d"],
             "/run"
         ],
         "ro": [

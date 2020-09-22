@@ -4,6 +4,3 @@
 /.cache/*
 /.config/*
 /.local/*
-!/.cache/.keep
-!/.config/.keep
-!/.local/.keep
