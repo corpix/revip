@@ -48,6 +48,7 @@ func postprocessApply(m Config, path []string) error {
 		err := ve.Validate()
 		if err != nil {
 			return &ErrPostprocess{
+				Type: reflect.TypeOf(m).String(),
 				Path: path,
 				Err:  err,
 			}

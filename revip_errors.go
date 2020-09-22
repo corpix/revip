@@ -30,14 +30,15 @@ func (e *ErrPathNotFound) Error() string {
 
 // ErrPostprocess represents an error occured at the postprocess stage (set defaults, validation, etc)
 type ErrPostprocess struct {
+	Type string
 	Path []string
 	Err  error
 }
 
 func (e *ErrPostprocess) Error() string {
 	return fmt.Sprintf(
-		"postprocessing failed at %q: %s",
-		strings.Join(e.Path, "."),
+		"postprocessing failed at %s: %s",
+		strings.Join(append([]string{e.Type}, e.Path...), "."),
 		e.Err.Error(),
 	)
 }
