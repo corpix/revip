@@ -38,7 +38,7 @@ type (
 )
 
 func (c *Config) Validate() error {
-	if c.Baz == 0 {
+	if c.Baz <= 0 {
 		return fmt.Errorf("baz should be greater than zero")
 	}
 	return nil
