@@ -62,7 +62,11 @@ func main() {
 		panic(err)
 	}
 
-	err = revip.Postprocess(&c)
+	err = revip.Postprocess(
+		&c,
+		revip.WithDefaults(),
+		revip.WithValidation(),
+	)
 	if err != nil {
 		panic(err)
 	}

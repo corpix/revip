@@ -12,6 +12,12 @@ import (
 // Config is a configuration represented by user-specified type.
 type Config = interface{}
 
+// Option defines generic interface for configuration source.
+type Option = func(c Config, m ...OptionMeta) error
+
+// OptionMeta is an optional meta-data to be passed to `Option`.
+type OptionMeta interface{}
+
 // Validatable is an interface which any `Config` key could implement
 // to define a validation rules for sub-tree it owns.
 type Validatable interface {

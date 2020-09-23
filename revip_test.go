@@ -144,7 +144,11 @@ func TestRevipPostprocess(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = Postprocess(&c)
+	err = Postprocess(
+		&c,
+		WithDefaults(),
+		WithValidation(),
+	)
 	if err != nil {
 		t.Error(err)
 	}
