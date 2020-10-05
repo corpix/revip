@@ -29,11 +29,13 @@ func (c *Config) Validate() error {
 
 func (c *Config) Default() {
 loop:
-	switch {
-	case c.Foo == nil:
-		c.Foo = &Foo{Bar:"bar default", Qux: true}
-	default:
-		break loop
+	for {
+		switch {
+		case c.Foo == nil:
+			c.Foo = &Foo{Bar:"bar default", Qux: true}
+		default:
+			break loop
+		}
 	}
 }
 
