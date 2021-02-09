@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/Jeffail/gabs v1.4.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/structs v1.1.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
