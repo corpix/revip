@@ -5,20 +5,18 @@ import (
 	"fmt"
 
 	"github.com/corpix/revip"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
-type (
-	Foo struct {
-		Bar string
-		Qux bool
-	}
-	Config struct {
-		Foo *Foo
-		Baz int
-		Dox []string
-		Box []int
-	}
-)
+type Config struct {
+	Foo *Foo
+	Baz int
+	Dox []string
+	Box []int
+	Fox map[string]*Foo
+	Gox []*Foo
+}
 
 func (c *Config) Validate() error {
 	if c.Baz <= 0 {
@@ -33,11 +31,38 @@ loop:
 		switch {
 		case c.Foo == nil:
 			c.Foo = &Foo{Bar:"bar default", Qux: true}
+		case c.Fox == nil:
+			c.Fox = map[string]*Foo{"key": &Foo{}}
+		case c.Gox == nil:
+			c.Gox = []*Foo{
+				&Foo{},
+			}
 		default:
 			break loop
 		}
 	}
 }
+
+//
+
+type Foo struct {
+		Bar string
+		Qux bool
+}
+
+func (c *Foo) Default() {
+loop:
+	for {
+		switch {
+		case c.Bar == "":
+			c.Bar = "default value"
+		default:
+			break loop
+		}
+	}
+}
+
+//
 
 func main() {
 	c := Config{
@@ -73,5 +98,5 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("config: %#v\n", c)
+	spew.Dump(c)
 }

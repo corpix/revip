@@ -1,6 +1,7 @@
 package revip
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/fatih/structs"
@@ -27,29 +28,60 @@ func postprocess(c Config, path []string, op []Option) error {
 		return err
 	}
 
-	//n
+	//
 
-	t := reflect.TypeOf(c)
-
-	if indirectType(t).Kind() != reflect.Struct {
-		return nil
-	}
+	kind := reflect.TypeOf(c).Kind()
+	value := reflect.ValueOf(c)
 
 	//
 
-	for _, v := range structs.Fields(c) {
-		if !v.IsExported() {
-			continue
-		}
-
-		err := postprocess(
-			v.Value(),
-			append(path, v.Name()),
+	switch kind {
+	case reflect.Ptr:
+		return postprocess(
+			indirectValue(value).Interface(),
+			path,
 			op,
 		)
-		if err != nil {
-			return err
+	case reflect.Struct:
+		for _, v := range structs.Fields(c) {
+			if !v.IsExported() {
+				continue
+			}
+
+			err := postprocess(
+				v.Value(),
+				append(path, v.Name()),
+				op,
+			)
+			if err != nil {
+				return err
+			}
 		}
+	case reflect.Array, reflect.Slice:
+		for n := 0; n < value.Len(); n++ {
+			err := postprocess(
+				value.Index(n).Interface(),
+				append(path, fmt.Sprintf("[%d]", n)),
+				op,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	case reflect.Map:
+		for _, k := range value.MapKeys() {
+			err := postprocess(
+				value.MapIndex(k).Interface(),
+				append(path, fmt.Sprintf("[%q]", k.String())),
+				op,
+			)
+			if err != nil {
+				return err
+			}
+
+		}
+	default:
+		return nil
 	}
 
 	return nil
@@ -68,7 +100,7 @@ func WithDefaults() Option {
 }
 
 func WithValidation() Option {
-	return func (c Config, m ...OptionMeta) error {
+	return func(c Config, m ...OptionMeta) error {
 		v, ok := c.(Validatable)
 		if ok {
 			err := v.Validate()
