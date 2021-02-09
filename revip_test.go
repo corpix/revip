@@ -94,7 +94,7 @@ type FooPostprocess struct {
 func (f *FooPostprocess) Default() {
 	fooPostprocessDefaultCalled++
 }
-func (f FooPostprocess) Validate() error {
+func (f *FooPostprocess) Validate() error {
 	fooPostprocessValidateCalled++
 	return nil
 }
@@ -114,7 +114,7 @@ type ConfigPostprocess struct {
 func (f *ConfigPostprocess) Default() {
 	configPostprocessDefaultCalled++
 }
-func (f ConfigPostprocess) Validate() error {
+func (f *ConfigPostprocess) Validate() error {
 	configPostprocessValidateCalled++
 	return nil
 }

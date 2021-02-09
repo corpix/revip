@@ -37,6 +37,7 @@ func postprocess(c Config, path []string, op []Option) error {
 
 	switch kind {
 	case reflect.Ptr:
+		// FIXME: will call op twice if receiver is not pointer, not sure how to fix atm
 		return postprocess(
 			indirectValue(value).Interface(),
 			path,
