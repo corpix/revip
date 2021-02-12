@@ -37,9 +37,14 @@ func postprocess(c Config, path []string, op []Option) error {
 
 	switch kind {
 	case reflect.Ptr:
+		if value.IsNil() {
+			return nil // NOTE: skip nil's, this mean we don't have a default value
+		}
+
 		// FIXME: will call op twice if receiver is not pointer, not sure how to fix atm
+		v := indirectValue(value)
 		return postprocess(
-			indirectValue(value).Interface(),
+			v.Interface(),
 			path,
 			op,
 		)

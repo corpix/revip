@@ -11,6 +11,7 @@ type FooSimple struct {
 	Bar string
 	Qux bool
 }
+type Untouched struct{}
 type ConfigSimple struct {
 	Foo FooSimple
 	Baz int
@@ -42,6 +43,7 @@ func TestRevipSimple(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
 	assert.Equal(
 		t,
 		ConfigSimple{
@@ -82,8 +84,8 @@ func TestRevipSimple(t *testing.T) {
 //
 
 var (
-	fooPostprocessDefaultCalled = 0
-	fooPostprocessValidateCalled    = 0
+	fooPostprocessDefaultCalled  = 0
+	fooPostprocessValidateCalled = 0
 )
 
 type FooPostprocess struct {
@@ -100,8 +102,8 @@ func (f *FooPostprocess) Validate() error {
 }
 
 var (
-	configPostprocessDefaultCalled = 0
-	configPostprocessValidateCalled    = 0
+	configPostprocessDefaultCalled  = 0
+	configPostprocessValidateCalled = 0
 )
 
 type ConfigPostprocess struct {
