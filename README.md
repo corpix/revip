@@ -19,7 +19,7 @@ It supports:
 ### run
 
 ```console
-$ go run ./example/main.go
+$ go run ./example/basic/main.go
 (main.Config) {
  Foo: (*main.Foo)(0xc00000e540)({
   Bar: (string) (len=3) "bar",
@@ -50,9 +50,9 @@ $ go run ./example/main.go
 Other things to try:
 
 ```console
-$ REVIP_FOO_BAR=hello go run ./example/main.go
-$ REVIP_BOX=888,777,666 go run ./example/main.go
-$ REVIP_BAZ=0 go run ./example/main.go
+$ REVIP_FOO_BAR=hello go run ./example/basic/main.go
+$ REVIP_BOX=888,777,666 go run ./example/basic/main.go
+$ REVIP_BAZ=0 go run ./example/basic/main.go
 ```
 
 ## license
