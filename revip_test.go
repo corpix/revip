@@ -5,7 +5,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"os"
 )
+
+func init() {
+	os.Setenv("REVIP_BAZ", "777")
+	os.Setenv("REVIP_FOO_BAR", "qux")
+}
+
+//
 
 type FooSimple struct {
 	Bar string

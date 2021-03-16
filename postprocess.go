@@ -3,8 +3,6 @@ package revip
 import (
 	"fmt"
 	"reflect"
-
-	"github.com/fatih/structs"
 )
 
 func Postprocess(c Config, op ...Option) error {
@@ -49,20 +47,13 @@ func postprocess(c Config, path []string, op []Option) error {
 			op,
 		)
 	case reflect.Struct:
-		for _, v := range structs.Fields(c) {
-			if !v.IsExported() {
-				continue
-			}
-
-			err := postprocess(
-				v.Value(),
-				append(path, v.Name()),
+		return walkStruct(c, func(v reflect.Value, xs []string) error {
+			return postprocess(
+				v.Interface(),
+				append(path, xs...),
 				op,
 			)
-			if err != nil {
-				return err
-			}
-		}
+		})
 	case reflect.Array, reflect.Slice:
 		for n := 0; n < value.Len(); n++ {
 			err := postprocess(

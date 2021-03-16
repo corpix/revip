@@ -2,12 +2,12 @@ package revip
 
 import (
 	"reflect"
+	"strings"
 
-	"github.com/Jeffail/gabs"
-	"github.com/fatih/structs"
-	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 )
+
+const PathDelimiter = "."
 
 // Config is a configuration represented by user-specified type.
 type Config = interface{}
@@ -18,16 +18,22 @@ type Option = func(c Config, m ...OptionMeta) error
 // OptionMeta is an optional meta-data to be passed to `Option`.
 type OptionMeta interface{}
 
-// Validatable is an interface which any `Config` key could implement
+// Validatable is an interface which any `Config` could implement
 // to define a validation rules for sub-tree it owns.
 type Validatable interface {
 	Validate() error
 }
 
-// Defaultable is an interface which any `Config` key could implement
+// Defaultable is an interface which any `Config` could implement
 // to define a custom default values for sub-tree it owns.
 type Defaultable interface {
 	Default()
+}
+
+// Updateable is an interface which any `Config` could implement
+// to define a custom configuration update logic.
+type Updateable interface {
+	Update(Config)
 }
 
 // Revip represents configuration loaded by `Load`.
@@ -39,30 +45,40 @@ type Revip struct {
 // Unwrap returns a pointer to the inner configuration data structure.
 func (r *Revip) Unwrap() interface{} { return r.config }
 
-// Config writes a shallow copy of the configuration into `v`.
-func (r *Revip) Config(v interface{}) error {
-	return copier.Copy(v, r.config)
+// Copy writes a shallow copy of the configuration into `v`.
+func (r *Revip) Copy(v interface{}) error {
+	return mapstructure.WeakDecode(r.config, v)
 }
 
-// Path uses `github.com/Jeffail/gabs` to retrieve configuration key
-// or sub-tree into `v` which is addressable by provided `path` or
+// DeepCopy writes a deep copy of the configuration into `v`.
+func (r *Revip) DeepCopy(v interface{}) error {
+	return mapstructure.Decode(r.config, v)
+}
+
+// Path uses dot notation to retrieve substruct addressable by `path` or
 // return an error if key was not found(`ErrNotFound`) or
 // something gone terribly wrong.
-func (r *Revip) Path(v Config, path string) error {
-	g, err := gabs.Consume(structs.Map(r.config))
+func (r *Revip) Path(dst Config, path string) error {
+	found := false
+
+	err := walkStruct(r.config, func(v reflect.Value, xs []string) error {
+		if strings.Join(xs, PathDelimiter) == path {
+			found = true
+			err := mapstructure.WeakDecode(v.Interface(), dst)
+			if err != nil {
+				return err
+			}
+			return stopIteration
+		}
+
+		return nil
+	})
 	if err != nil {
 		return err
 	}
 
-	if !g.ExistsP(path) {
+	if !found {
 		return &ErrPathNotFound{Path: path}
-	}
-
-	p := g.Path(path).Data()
-
-	err = mapstructure.WeakDecode(p, v)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -75,4 +91,24 @@ func New(c Config) *Revip {
 	}
 
 	return &Revip{config: c}
+}
+
+// LoadWithMeta feeds into each `op` `meta` and applies `op` in order to
+// fill the configuration in `v` then constructs a `*Revip` data-structure.
+func LoadWithMeta(v Config, meta []OptionMeta, op ...Option) (*Revip, error) {
+	var err error
+	for _, f := range op {
+		err = f(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return New(v), nil
+}
+
+// Load applies each `op` in order to fill the configuration in `v` and
+// constructs a `*Revip` data-structure.
+func Load(v Config, op ...Option) (*Revip, error) {
+	return LoadWithMeta(v, nil, op...)
 }

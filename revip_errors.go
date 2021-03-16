@@ -2,6 +2,7 @@ package revip
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -28,6 +29,30 @@ func (e *ErrPathNotFound) Error() string {
 
 //
 
+// ErrMarshal should be returned if key marshaling failed.
+type ErrMarshal struct {
+	At  string
+	Err error
+}
+
+func (e *ErrMarshal) Error() string {
+	return fmt.Sprintf("failed to marshal at: %q: %s", e.At, e.Err)
+}
+
+//
+
+// ErrUnmarshal should be returned if key unmarshaling failed.
+type ErrUnmarshal struct {
+	At  string
+	Err error
+}
+
+func (e *ErrUnmarshal) Error() string {
+	return fmt.Sprintf("failed to unmarshal at: %q: %s", e.At, e.Err)
+}
+
+//
+
 // ErrPostprocess represents an error occured at the postprocess stage (set defaults, validation, etc)
 type ErrPostprocess struct {
 	Type string
@@ -40,5 +65,21 @@ func (e *ErrPostprocess) Error() string {
 		"postprocessing failed at %s: %s",
 		strings.Join(append([]string{e.Type}, e.Path...), "."),
 		e.Err.Error(),
+	)
+}
+
+//
+
+// ErrUnexpectedKind represents an unexpected interface{} value kind received by some function.
+// For example passing non pointer value to a function which expects pointer (like json.Unmarshal)
+type ErrUnexpectedKind struct {
+	Got      reflect.Kind
+	Expected []reflect.Kind
+}
+
+func (e *ErrUnexpectedKind) Error() string {
+	return fmt.Sprintf(
+		"unexpected kind %s, expected one of %s",
+		e.Got, e.Expected,
 	)
 }

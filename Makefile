@@ -2,7 +2,7 @@
 
 ## parameters
 
-NAME              ?= irevip
+NAME              ?= revip
 NAMESPACE         ?= github.com/corpix
 VERSION           ?= development
 ENV               ?= dev
@@ -51,7 +51,7 @@ endef
 ## targets
 
 .PHONY: all
-all: build # test, check and build all cmds
+all: lint test # test, check and build all cmds
 
 .PHONY: help
 help: # print defined targets and their comments
@@ -60,41 +60,24 @@ help: # print defined targets and their comments
 		| sed 's|:.*#|#|;s|#\s*|#|'                 \
 		| column -t -s '#' -o ' | '
 
-### releases
+#### runners
 
-### development
+## env
 
-.PHONY: test
-test: # run unit tests
-	bash -c 'REVIP_BAZ=777 REVIP_FOO_BAR=qux go test -v ./...'
+.PHONY: run/shell
+run/shell: # enter development environment with nix-shell
+	nix-shell
 
-#### testing
+.PHONY: run/cage/shell
+run/cage/shell: # enter sandboxed development environment with nix-cage
+	nix-cage
 
-#### environment management
+## dev session
 
-.PHONY: dev/clean
-dev/clean: # clean development environment artifacts
-	docker volume rm nix
-
-.PHONY: dev/shell
-dev/shell: # run development environment shell
-	@docker run --rm -it                   \
-		--log-driver=none              \
-		$(shell_opts) nixos/nix:latest \
-		nix-shell --command "exec make dev/start-session"
-
-.PHONY: dev/shell/raw
-dev/shell/raw: # run development environment shell
-	@docker run --rm -it                   \
-		--log-driver=none              \
-		$(shell_opts) nixos/nix:latest \
-		nix-shell
-
-.PHONY: dev/session
-dev/start-session: # start development environment terminals with database, blockchain, etc... one window per app
+.PHONY: run/tmux/session
+run/tmux/session: # start development environment
 	@$(tmux) has-session    -t $(tmux_session) && $(call fail,tmux session $(tmux_session) already exists$(,) use: '$(tmux) attach-session -t $(tmux_session)' to attach) || true
 	@$(tmux) new-session    -s $(tmux_session) -n console -d
-	@sleep 1 # sometimes input is messed up (bash+stdin early handling?)
 	@$(tmux) select-window  -t $(tmux_session):0
 
 	@if [ -f $(root)/.personal.tmux.conf ]; then             \
@@ -103,14 +86,51 @@ dev/start-session: # start development environment terminals with database, bloc
 
 	@$(tmux) attach-session -t $(tmux_session)
 
-.PHONY: dev/attach-session
-dev/attach-session: # attach to development session if running
+.PHONY: run/tmux/attach
+run/tmux/attach: # attach to development session if running
 	@$(tmux) attach-session -t $(tmux_session)
 
-.PHONY: dev/stop-session
-dev/stop-session: # stop development environment terminals
+.PHONY: run/tmux/kill
+run/tmux/kill: # kill development environment
 	@$(tmux) kill-session -t $(tmux_session)
 
+### development
+
+.PHONY: test
+test: # run unit tests
+	go test -v ./...
+
+.PHONY: lint
+lint: # run linter
+	golangci-lint --color=always --timeout=120s run ./...
+
+#### testing
+
+test/etcd/data: # make sure etcd data directory exists
+	mkdir -p $@
+
+.PHONY: run/etcd
+run/etcd: test/etcd/data # run etcd coordinator & kv storage service
+	@bash -xec "cd $(dir $<); exec etcd --data-dir=./data --debug"
+
+clean:: # remove etcd data
+	rm -rf test/etcd/data
+
+#### docker
+
+.PHONY: run/docker/shell
+run/docker/shell: # run development environment shell
+	@docker run --rm -it                   \
+		--log-driver=none              \
+		$(shell_opts) nixos/nix:latest \
+		nix-shell --run 'exec make run/shell'
+
+.PHONY: run/docker/clean
+run/docker/clean: # clean development environment artifacts
+	docker volume rm nix
+
+##
+
 .PHONY: clean
-clean: # clean stored state
+clean:: # clean stored state
 	rm -rf result*

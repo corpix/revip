@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"syscall"
 
 	json "encoding/json"
@@ -12,7 +13,7 @@ import (
 	toml "github.com/pelletier/go-toml"
 )
 
-// Unmarshaler describes a generic unmarshal interface
+// Unmarshaler describes a generic unmarshal interface for data decoding
 // which could be used to extend supported formats by defining new `Option`
 // implementations.
 type Unmarshaler = func(in []byte, v interface{}) error
@@ -23,11 +24,16 @@ var (
 	TomlUnmarshaler Unmarshaler = toml.Unmarshal
 )
 
-// FromReader is a `Source` constructor which creates a thunk
+// FromReader is an `Option` constructor which creates a thunk
 // to read configuration from `r` and decode it with `f` unmarshaler.
 // Current implementation buffers all data in memory.
 func FromReader(r io.Reader, f Unmarshaler) Option {
 	return func(c Config, m ...OptionMeta) error {
+		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
+		if err != nil {
+			return err
+		}
+
 		buf, err := ioutil.ReadAll(r)
 		if err != nil {
 			return err
@@ -37,11 +43,16 @@ func FromReader(r io.Reader, f Unmarshaler) Option {
 	}
 }
 
-// FromFile is a `Source` constructor which creates a thunk
-// to read configuration from file addressable by `path` and
-// decodes it with `f` unmarshaler.
+// FromFile is an `Option` constructor which creates a thunk
+// to read configuration from file addressable by `path` with
+// conmtent decoded with `f` unmarshaler.
 func FromFile(path string, f Unmarshaler) Option {
 	return func(c Config, m ...OptionMeta) error {
+		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
+		if err != nil {
+			return err
+		}
+
 		r, err := os.Open(path)
 		switch e := err.(type) {
 		case *os.PathError:
@@ -57,15 +68,20 @@ func FromFile(path string, f Unmarshaler) Option {
 		}
 		defer r.Close()
 
-		return FromReader(r, f)(c)
+		return FromReader(r, f)(c, m...)
 	}
 }
 
-// FromEnviron is a `Source` constructor which creates a thunk
+// FromEnviron is an `Option` constructor which creates a thunk
 // to read configuration from environment.
 // It uses `github.com/kelseyhightower/envconfig` underneath.
 func FromEnviron(prefix string) Option {
 	return func(c Config, m ...OptionMeta) error {
+		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
+		if err != nil {
+			return err
+		}
+
 		return env.Process(prefix, c)
 	}
 }
