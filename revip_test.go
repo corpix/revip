@@ -19,7 +19,6 @@ type FooSimple struct {
 	Bar string
 	Qux bool
 }
-type Untouched struct{}
 type ConfigSimple struct {
 	Foo FooSimple
 	Baz int
