@@ -12,12 +12,12 @@ func indirectValue(reflectValue reflect.Value) reflect.Value {
 	return reflectValue
 }
 
-// func indirectType(reflectType reflect.Type) reflect.Type {
-// 	if reflectType.Kind() == reflect.Ptr || reflectType.Kind() == reflect.Slice {
-// 		return reflectType.Elem()
-// 	}
-// 	return reflectType
-// }
+func indirectType(reflectType reflect.Type) reflect.Type {
+	if reflectType.Kind() == reflect.Ptr || reflectType.Kind() == reflect.Slice {
+		return reflectType.Elem()
+	}
+	return reflectType
+}
 
 func expectKind(reflectType reflect.Type, ks ...reflect.Kind) error {
 	k := reflectType.Kind()

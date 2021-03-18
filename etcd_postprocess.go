@@ -165,6 +165,11 @@ func etcdWatchHandle(ctx context.Context, batchSize int, batchDuration time.Dura
 				case etcdOperationDelete:
 					v.Set(reflect.New(v.Type()).Elem())
 				case etcdOperationPut:
+					switch indirectType(v.Type()).Kind() {
+					case reflect.Map: // erase map because unmarshal update semantics is "merge"
+						v.Set(reflect.New(v.Type()).Elem())
+					}
+
 					err := f(evt.data, v.Addr().Interface())
 					if err != nil {
 						return err
