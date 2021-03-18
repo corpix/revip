@@ -40,7 +40,7 @@ func ToEtcd(client *etcd.Client, namespace string, f Marshaler) Option {
 
 		return walkStruct(c, func(v reflect.Value, path []string) error {
 			if v.Type().Kind() == reflect.Ptr {
-				return skipBranch
+				return nil
 			}
 
 			key := strings.Join(append(prefix, path...), PathDelimiter)
