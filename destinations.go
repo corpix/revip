@@ -77,7 +77,7 @@ func ToURL(u string, e Marshaler) (Option, error) {
 	}
 
 	switch uu.Scheme {
-	case SchemeFile:
+	case SchemeFile, SchemeEmpty:
 		return ToFile(path.Join(uu.Host, uu.Path), e), nil
 	case SchemeEtcd:
 		c, err := NewEtcdClientFromURL(uu)

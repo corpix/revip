@@ -103,7 +103,7 @@ func FromURL(u string, d Unmarshaler) (Option, error) {
 	}
 
 	switch uu.Scheme {
-	case SchemeFile:
+	case SchemeFile, SchemeEmpty:
 		return FromFile(path.Join(uu.Host, uu.Path), d), nil
 	case SchemeEnviron:
 		return FromEnviron(uu.Host), nil
