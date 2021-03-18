@@ -9,6 +9,26 @@ import (
 
 const PathDelimiter = "."
 
+const (
+	SchemeFile    = "file" // file://./config.yml
+	SchemeEnviron = "env"  // env://prefix
+	SchemeEtcd    = "etcd" // etcd://user@password:127.0.0.1:2379/namespace
+)
+
+var (
+	// FromSchemes represents schemes supported for sources.
+	FromSchemes = []string{
+		SchemeFile,
+		SchemeEnviron,
+		SchemeEtcd,
+	}
+	// ToSchemes represents schemes supported for destrinations.
+	ToSchemes = []string{
+		SchemeFile,
+		SchemeEtcd,
+	}
+)
+
 // Config is a configuration represented by user-specified type.
 type Config = interface{}
 
@@ -33,7 +53,7 @@ type Defaultable interface {
 // Updateable is an interface which any `Config` could implement
 // to define a custom configuration update logic.
 type Updateable interface {
-	Update(Config)
+	Update(Config) error
 }
 
 // Revip represents configuration loaded by `Load`.

@@ -3,8 +3,11 @@ package revip
 import (
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"path"
 	"reflect"
+	"strings"
 	"syscall"
 
 	json "encoding/json"
@@ -83,5 +86,37 @@ func FromEnviron(prefix string) Option {
 		}
 
 		return env.Process(prefix, c)
+	}
+}
+
+//
+
+// FromURL creates a source from URL.
+// Example URL's:
+//   - file://./config.yml
+//   - env://prefix
+//   - etcd://user@password:127.0.0.1:2379/namespace
+func FromURL(u string, d Unmarshaler) (Option, error) {
+	uu, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	switch uu.Scheme {
+	case SchemeFile:
+		return FromFile(path.Join(uu.Host, uu.Path), d), nil
+	case SchemeEnviron:
+		return FromEnviron(uu.Host), nil
+	case SchemeEtcd:
+		c, err := NewEtcdClientFromURL(uu)
+		if err != nil {
+			return nil, err
+		}
+		return FromEtcd(c, strings.TrimPrefix(uu.Path, "/"), d), nil
+	default:
+		return nil, &ErrUnexpectedScheme{
+			Got:      uu.Scheme,
+			Expected: FromSchemes,
+		}
 	}
 }

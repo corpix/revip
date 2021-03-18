@@ -9,8 +9,13 @@ import (
 	etcd "go.etcd.io/etcd/clientv3"
 )
 
+// ToEtcd represents an etcd destination for configuration
+// which is stored as a separate key for each struct field.
+// All values stored encoded with providen Marshaler.
+// For return value, Option:
 // optional context could be providen through meta options
 // if not providen then default context will be created with 60s timeout
+// for the operations on the whole configuration structure.
 func ToEtcd(client *etcd.Client, namespace string, f Marshaler) Option {
 	prefix := []string{namespace}
 

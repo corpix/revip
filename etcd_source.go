@@ -9,6 +9,14 @@ import (
 	etcd "go.etcd.io/etcd/clientv3"
 )
 
+// FromEtcd represents an etcd source of configuration
+// which expected configuration to be stored as a separate key
+// for each struct field.
+// All values decoded with providen Unmarshaler.
+// For return value, Option:
+// optional context could be providen through meta options
+// if not providen then default context will be created with 60s timeout
+// for the operations on the whole configuration structure.
 func FromEtcd(client *etcd.Client, namespace string, f Unmarshaler) Option {
 	prefix := []string{namespace}
 

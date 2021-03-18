@@ -83,3 +83,18 @@ func (e *ErrUnexpectedKind) Error() string {
 		e.Got, e.Expected,
 	)
 }
+
+//
+
+// ErrUnexpectedScheme represents an unexpected URL scheme.
+type ErrUnexpectedScheme struct {
+	Got      string
+	Expected []string
+}
+
+func (e *ErrUnexpectedScheme) Error() string {
+	return fmt.Sprintf(
+		"unexpected scheme %s, expected one of %s",
+		e.Got, e.Expected,
+	)
+}

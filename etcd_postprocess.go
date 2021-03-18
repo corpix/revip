@@ -12,6 +12,8 @@ import (
 
 //
 
+// WithUpdatesFromEtcdConfig represents a configuration for WithUpdatesFromEtcd.
+// By default OnError panics.
 type UpdateFromEtcdConfig struct {
 	Ctx           context.Context
 	BatchSize     int
@@ -19,12 +21,15 @@ type UpdateFromEtcdConfig struct {
 	OnError       func(error)
 }
 
+// UpdateFromEtcdOption represents an option for WithUpdatesFromEtcdConfig.
 type UpdateFromEtcdOption = func(*UpdateFromEtcdConfig)
 
+// UpdatesFromEtcdContext set Ctx on UpdateFromEtcdConfig.
 func UpdatesFromEtcdContext(ctx context.Context) UpdateFromEtcdOption {
 	return func(c *UpdateFromEtcdConfig) { c.Ctx = ctx }
 }
 
+// UpdatesFromEtcdBatch set Batch* on UpdateFromEtcdConfig.
 func UpdatesFromEtcdBatch(size int, duration time.Duration) UpdateFromEtcdOption {
 	return func(c *UpdateFromEtcdConfig) {
 		c.BatchSize = size
@@ -32,6 +37,7 @@ func UpdatesFromEtcdBatch(size int, duration time.Duration) UpdateFromEtcdOption
 	}
 }
 
+// UpdatesFromEtcdErrorHandler set OnError on UpdateFromEtcdConfig.
 func UpdatesFromEtcdErrorHandler(cb func(error)) UpdateFromEtcdOption {
 	return func(c *UpdateFromEtcdConfig) {
 		c.OnError = cb
@@ -40,6 +46,7 @@ func UpdatesFromEtcdErrorHandler(cb func(error)) UpdateFromEtcdOption {
 
 //
 
+// etcdWatch builds a slice of watch channels for UpdateFromEtcdConfig.
 func etcdWatch(ctx context.Context, c Config, namespace string, client *etcd.Client) ([]etcd.WatchChan, error) {
 	chs := []etcd.WatchChan{}
 	err := walkStruct(c, func(v reflect.Value, path []string) error {
@@ -68,6 +75,9 @@ func etcdWatch(ctx context.Context, c Config, namespace string, client *etcd.Cli
 	return chs, nil
 }
 
+// etcdWatchPump is a background job for UpdateFromEtcdConfig.
+// It pumps events from etcd client watcher to the single events channel,
+// which is handled by etcdWatchHandle.
 func etcdWatchPump(ctx context.Context, chs []etcd.WatchChan, events chan etcdUpdateEvent) {
 	cases := make([]reflect.SelectCase, len(chs)+1)
 	cases[0] = reflect.SelectCase{
@@ -100,6 +110,8 @@ func etcdWatchPump(ctx context.Context, chs []etcd.WatchChan, events chan etcdUp
 	}
 }
 
+// etcdWatchHandle is a background job for UpdateFromEtcdConfig.
+// Implements batching and notifications for etcdWatchPump events (via calling .Update(...) on Config struct).
 func etcdWatchHandle(ctx context.Context, batchSize int, batchDuration time.Duration, c Config, namespace string, events chan etcdUpdateEvent, v Updateable, onError func(error), f Unmarshaler) {
 	var (
 		versions = map[string]int64{}
@@ -186,7 +198,11 @@ func etcdWatchHandle(ctx context.Context, batchSize int, batchDuration time.Dura
 
 		// update configuration
 
-		v.Update(dst)
+		err = v.Update(dst)
+		if err != nil {
+			onError(err)
+			continue
+		}
 
 		err = mapstructure.Decode(dst, c)
 		if err != nil {
@@ -200,6 +216,7 @@ func etcdWatchHandle(ctx context.Context, batchSize int, batchDuration time.Dura
 	}
 }
 
+// WithUpdatesFromEtcd represents a postprocess Option which handles updates from etcd.
 func WithUpdatesFromEtcd(client *etcd.Client, namespace string, f Unmarshaler, op ...UpdateFromEtcdOption) Option {
 	cfg := &UpdateFromEtcdConfig{
 		Ctx:           context.Background(),

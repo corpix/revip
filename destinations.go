@@ -2,8 +2,11 @@ package revip
 
 import (
 	"io"
+	"net/url"
 	"os"
+	"path"
 	"reflect"
+	"strings"
 
 	json "encoding/json"
 
@@ -58,5 +61,34 @@ func ToFile(path string, f Marshaler) Option {
 		defer r.Close()
 
 		return ToWriter(r, f)(c, m...)
+	}
+}
+
+//
+
+// ToURL creates a destination from URL.
+// Example URL's:
+//   - file://./config.yml
+//   - etcd://user@password:127.0.0.1:2379/namespace
+func ToURL(u string, e Marshaler) (Option, error) {
+	uu, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	switch uu.Scheme {
+	case SchemeFile:
+		return ToFile(path.Join(uu.Host, uu.Path), e), nil
+	case SchemeEtcd:
+		c, err := NewEtcdClientFromURL(uu)
+		if err != nil {
+			return nil, err
+		}
+		return ToEtcd(c, strings.TrimPrefix(uu.Path, "/"), e), nil
+	default:
+		return nil, &ErrUnexpectedScheme{
+			Got:      uu.Scheme,
+			Expected: ToSchemes,
+		}
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"github.com/corpix/revip"
 
 	"github.com/davecgh/go-spew/spew"
-	etcd "go.etcd.io/etcd/clientv3"
 )
 
 type X struct {
@@ -20,8 +19,9 @@ type X struct {
 	}
 }
 
-func (x *X) Update(xx interface{}) {
+func (x *X) Update(xx interface{}) error {
 	spew.Dump("UPDATE", x, xx)
+	return nil
 }
 
 func main() {
@@ -33,24 +33,43 @@ func main() {
 		Qux: struct{ QuxFoo string }{QuxFoo: "I was awaiting you"},
 		XXX: map[string]struct{ XXXFoo string }{"test": {XXXFoo: "test"}},
 	}
-
-	c, err := etcd.New(etcd.Config{Endpoints: []string{"127.0.0.1:2379"}})
-	if err != nil {
-		panic(err)
-	}
-
-	err = revip.ToEtcd(c, prefix, revip.JsonMarshaler)(x)
-	if err != nil {
-		panic(err)
-	}
-
 	xx := X{}
-	err = revip.FromEtcd(c, prefix, revip.JsonUnmarshaler)(&xx)
+
+	//
+
+	url := "etcd://127.0.0.1:2379/" + prefix
+	c, err := revip.NewEtcdClient(url)
+	if err != nil {
+		panic(err)
+	}
+
+	//
+
+	to, err := revip.ToURL(url, revip.JsonMarshaler)
+	if err != nil {
+		panic(err)
+	}
+
+	from, err := revip.FromURL(url, revip.JsonUnmarshaler)
 	if err != nil {
 		panic(err)
 	}
 
 	watch := revip.WithUpdatesFromEtcd(c, prefix, revip.JsonUnmarshaler)
+
+	//
+
+	err = to(x)
+	if err != nil {
+		panic(err)
+	}
+	err = from(&xx)
+	if err != nil {
+		panic(err)
+	}
+
+	//
+
 	err = watch(&x)
 	if err != nil {
 		panic(err)
