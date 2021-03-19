@@ -43,7 +43,7 @@ func ToEtcd(client *etcd.Client, namespace string, f Marshaler) Option {
 				return nil
 			}
 
-			key := strings.Join(append(prefix, path...), PathDelimiter)
+			key := strings.Join(append(prefix, path...), EtcdPathDelimiter)
 
 			buf, err := f(v.Interface())
 			if err != nil {

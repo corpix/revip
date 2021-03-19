@@ -47,7 +47,7 @@ func FromEtcd(client *etcd.Client, namespace string, f Unmarshaler) Option {
 				return nil
 			}
 
-			key := strings.Join(append(prefix, path...), PathDelimiter)
+			key := strings.Join(append(prefix, path...), EtcdPathDelimiter)
 
 			r, err := client.Get(ctx, key)
 			if err != nil {

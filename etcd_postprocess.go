@@ -61,7 +61,7 @@ func etcdWatch(ctx context.Context, c Config, namespace string, client *etcd.Cli
 			ctx,
 			strings.Join(
 				prefixPath(namespace, path),
-				PathDelimiter,
+				EtcdPathDelimiter,
 			),
 		)
 		chs = append(chs, ch)
@@ -171,7 +171,7 @@ func etcdWatchHandle(ctx context.Context, batchSize int, batchDuration time.Dura
 				return skipBranch
 			}
 
-			key := strings.Join(prefixPath(namespace, path), PathDelimiter)
+			key := strings.Join(prefixPath(namespace, path), EtcdPathDelimiter)
 			if evt, ok := evtByKey[key]; ok {
 				switch evt.operation {
 				case etcdOperationDelete:

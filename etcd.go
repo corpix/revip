@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	EtcdPathDelimiter   = "/"
 	etcdOperationPut    = int32(pb.PUT)
 	etcdOperationDelete = int32(pb.DELETE)
 )
