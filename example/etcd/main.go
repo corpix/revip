@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/corpix/revip"
 
 	"github.com/davecgh/go-spew/spew"
@@ -77,6 +79,9 @@ func main() {
 
 	spew.Dump("TO ETCD", x)
 	spew.Dump("FROM ETCD", xx)
+
+	fmt.Println()
+	fmt.Println(`now try to run: etcdctl put test/Foo '"hello you"'`)
 
 	select {}
 }

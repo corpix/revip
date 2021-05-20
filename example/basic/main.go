@@ -30,7 +30,7 @@ loop:
 	for {
 		switch {
 		case c.Foo == nil:
-			c.Foo = &Foo{Bar:"bar default", Qux: true}
+			c.Foo = &Foo{Bar: "bar default", Qux: true}
 		case c.Fox == nil:
 			c.Fox = map[string]*Foo{"key": &Foo{}}
 		case c.Gox == nil:
@@ -46,8 +46,8 @@ loop:
 //
 
 type Foo struct {
-		Bar string
-		Qux bool
+	Bar string
+	Qux bool
 }
 
 func (c *Foo) Default() {

@@ -46,59 +46,21 @@ func UpdatesFromEtcdErrorHandler(cb func(error)) UpdateFromEtcdOption {
 
 //
 
-// etcdWatch builds a slice of watch channels for UpdateFromEtcdConfig.
-func etcdWatch(ctx context.Context, c Config, namespace string, client *etcd.Client) ([]etcd.WatchChan, error) {
-	chs := []etcd.WatchChan{}
-	err := walkStruct(c, func(v reflect.Value, path []string) error {
-		switch v.Type().Kind() { // ignore nil's and substructs (substructs may have their own handlers)
-		case reflect.Struct:
-			return skipBranch
-		case reflect.Ptr:
-			return nil
-		}
-
-		ch := client.Watch(
-			ctx,
-			strings.Join(
-				prefixPath(namespace, path),
-				EtcdPathDelimiter,
-			),
-		)
-		chs = append(chs, ch)
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return chs, nil
-}
-
 // etcdWatchPump is a background job for UpdateFromEtcdConfig.
 // It pumps events from etcd client watcher to the single events channel,
 // which is handled by etcdWatchHandle.
-func etcdWatchPump(ctx context.Context, chs []etcd.WatchChan, events chan etcdUpdateEvent) {
-	cases := make([]reflect.SelectCase, len(chs)+1)
-	cases[0] = reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(ctx.Done()),
-	}
-	for n, ch := range chs {
-		cases[n+1] = reflect.SelectCase{
-			Dir:  reflect.SelectRecv,
-			Chan: reflect.ValueOf(ch),
-		}
-	}
+func etcdWatchPump(ctx context.Context, ch etcd.WatchChan, events chan etcdUpdateEvent) {
+loop:
 	for {
-		chosen, value, ok := reflect.Select(cases)
-		if chosen == 0 {
-			return // ctx done
-		}
+		select {
+		case <-ctx.Done():
+			break loop
+		case v, ok := <-ch:
+			if !ok {
+				break loop
+			}
 
-		if ok {
-			r := value.Interface().(etcd.WatchResponse)
-			for _, evt := range r.Events {
+			for _, evt := range v.Events {
 				events <- etcdUpdateEvent{
 					operation: int32(evt.Type),
 					data:      evt.Kv.Value,
@@ -236,12 +198,7 @@ func WithUpdatesFromEtcd(client *etcd.Client, namespace string, f Unmarshaler, o
 
 		events := make(chan etcdUpdateEvent, 16)
 
-		chs, err := etcdWatch(cfg.Ctx, c, namespace, client)
-		if err != nil {
-			return err
-		}
-
-		go etcdWatchPump(cfg.Ctx, chs, events)
+		go etcdWatchPump(cfg.Ctx, client.Watch(cfg.Ctx, namespace, etcd.WithPrefix()), events)
 		go etcdWatchHandle(cfg.Ctx, cfg.BatchSize, cfg.BatchDuration, c, namespace, events, v, cfg.OnError, f)
 
 		return nil

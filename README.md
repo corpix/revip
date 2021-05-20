@@ -7,7 +7,8 @@ It supports:
 - JSON, TOML, YAML and you could add your own format unmarshaler (see `Unmarshaler` type)
 - file, reader and environment sources support, also you could add your own (see `Option` type and `sources.go`)
 - extendable postprocessing support (validation, defaults, see `Option` type and `postprocess.go`)
-- JSON-path support
+- dot-notation to access configuration keys
+- reading and writing to and from etcd (with watchers)
 
 [Godoc](https://godoc.org/github.com/corpix/revip)
 
