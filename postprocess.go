@@ -99,7 +99,9 @@ func WithDefaults() Option {
 func WithValidation() Option {
 	return func(c Config, m ...OptionMeta) error {
 		v, ok := c.(Validatable)
-		if ok {
+		rv := reflect.ValueOf(v)
+
+		if ok && (rv.Kind() != reflect.Ptr || !rv.IsNil()) {
 			err := v.Validate()
 			if err != nil {
 				var path []string
