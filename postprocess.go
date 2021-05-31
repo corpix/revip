@@ -89,7 +89,7 @@ func postprocess(c Config, path []string, op []Option) error {
 func WithDefaults() Option {
 	return func(c Config, m ...OptionMeta) error {
 		v, ok := c.(Defaultable)
-		if ok {
+		if ok && !isnil(reflect.ValueOf(v)) {
 			v.Default()
 		}
 		return nil
@@ -99,9 +99,7 @@ func WithDefaults() Option {
 func WithValidation() Option {
 	return func(c Config, m ...OptionMeta) error {
 		v, ok := c.(Validatable)
-		rv := reflect.ValueOf(v)
-
-		if ok && (rv.Kind() != reflect.Ptr || !rv.IsNil()) {
+		if ok && !isnil(reflect.ValueOf(v)) {
 			err := v.Validate()
 			if err != nil {
 				var path []string

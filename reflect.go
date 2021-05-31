@@ -19,6 +19,13 @@ func indirectType(reflectType reflect.Type) reflect.Type {
 	return reflectType
 }
 
+func isnil(reflectValue reflect.Value) bool {
+	if reflectValue.Kind() == reflect.Ptr {
+		return reflectValue.IsNil()
+	}
+	return false
+}
+
 func expectKind(reflectType reflect.Type, ks ...reflect.Kind) error {
 	k := reflectType.Kind()
 
