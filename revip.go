@@ -39,16 +39,22 @@ type Option = func(c Config, m ...OptionMeta) error
 // OptionMeta is an optional meta-data to be passed to `Option`.
 type OptionMeta interface{}
 
+// Defaultable is an interface which any `Config` could implement
+// to define a custom default values for sub-tree it owns.
+type Defaultable interface {
+	Default()
+}
+
 // Validatable is an interface which any `Config` could implement
 // to define a validation rules for sub-tree it owns.
 type Validatable interface {
 	Validate() error
 }
 
-// Defaultable is an interface which any `Config` could implement
-// to define a custom default values for sub-tree it owns.
-type Defaultable interface {
-	Default()
+// Expandable is an interface which any `Config` could implement
+// to define an expansion rules for sub-tree it owns.
+type Expandable interface {
+	Expand() error
 }
 
 // Updateable is an interface which any `Config` could implement

@@ -73,14 +73,17 @@ func (e *ErrPostprocess) Error() string {
 // ErrUnexpectedKind represents an unexpected interface{} value kind received by some function.
 // For example passing non pointer value to a function which expects pointer (like json.Unmarshal)
 type ErrUnexpectedKind struct {
+	Type     reflect.Type
 	Got      reflect.Kind
 	Expected []reflect.Kind
 }
 
 func (e *ErrUnexpectedKind) Error() string {
 	return fmt.Sprintf(
-		"unexpected kind %s, expected one of %s",
-		e.Got, e.Expected,
+		"unexpected kind %s for type %s, expected one of %s",
+		e.Got,
+		e.Type,
+		e.Expected,
 	)
 }
 
@@ -95,6 +98,7 @@ type ErrUnexpectedScheme struct {
 func (e *ErrUnexpectedScheme) Error() string {
 	return fmt.Sprintf(
 		"unexpected scheme %s, expected one of %s",
-		e.Got, e.Expected,
+		e.Got,
+		e.Expected,
 	)
 }

@@ -6,7 +6,7 @@ It supports:
 
 - JSON, TOML, YAML and you could add your own format unmarshaler (see `Unmarshaler` type)
 - file, reader and environment sources support, also you could add your own (see `Option` type and `sources.go`)
-- extendable postprocessing support (validation, defaults, see `Option` type and `postprocess.go`)
+- extendable postprocessing support (defaults, validation, expansion, see `Option` type and `postprocess.go`)
 - dot-notation to access configuration keys
 - reading and writing to and from etcd (with watchers)
 
@@ -44,7 +44,8 @@ $ go run ./example/basic/main.go
    Bar: (string) (len=13) "default value",
    Qux: (bool) false
   })
- }
+ },
+ key: (string) (len=25) "value written by Expand()"
 }
 ```
 

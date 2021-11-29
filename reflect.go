@@ -36,6 +36,7 @@ func expectKind(reflectType reflect.Type, ks ...reflect.Kind) error {
 	}
 
 	return &ErrUnexpectedKind{
+		Type:     reflectType,
 		Got:      k,
 		Expected: ks,
 	}

@@ -88,8 +88,15 @@ func postprocess(c Config, path []string, op []Option) error {
 
 func WithDefaults() Option {
 	return func(c Config, m ...OptionMeta) error {
+		var err error
+
 		v, ok := c.(Defaultable)
 		if ok && !isnil(reflect.ValueOf(v)) {
+			err = expectKind(reflect.TypeOf(v), reflect.Ptr)
+			if err != nil {
+				return err
+			}
+
 			v.Default()
 		}
 		return nil
@@ -98,9 +105,44 @@ func WithDefaults() Option {
 
 func WithValidation() Option {
 	return func(c Config, m ...OptionMeta) error {
+		var err error
+
 		v, ok := c.(Validatable)
 		if ok && !isnil(reflect.ValueOf(v)) {
-			err := v.Validate()
+			err = expectKind(reflect.TypeOf(v), reflect.Ptr)
+			if err != nil {
+				return err
+			}
+
+			err = v.Validate()
+			if err != nil {
+				var path []string
+				if len(m) > 0 {
+					path = m[0].([]string)
+				}
+				return &ErrPostprocess{
+					Type: reflect.TypeOf(c).String(),
+					Path: path,
+					Err:  err,
+				}
+			}
+		}
+		return nil
+	}
+}
+
+func WithExpansion() Option {
+	return func(c Config, m ...OptionMeta) error {
+		var err error
+
+		v, ok := c.(Expandable)
+		if ok && !isnil(reflect.ValueOf(v)) {
+			err = expectKind(reflect.TypeOf(v), reflect.Ptr)
+			if err != nil {
+				return err
+			}
+
+			err = v.Expand()
 			if err != nil {
 				var path []string
 				if len(m) > 0 {

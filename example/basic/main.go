@@ -16,13 +16,7 @@ type Config struct {
 	Box []int
 	Fox map[string]*Foo
 	Gox []*Foo
-}
-
-func (c *Config) Validate() error {
-	if c.Baz <= 0 {
-		return fmt.Errorf("baz should be greater than zero")
-	}
-	return nil
+	key string
 }
 
 func (c *Config) Default() {
@@ -41,6 +35,19 @@ loop:
 			break loop
 		}
 	}
+}
+
+func (c *Config) Validate() error {
+	if c.Baz <= 0 {
+		return fmt.Errorf("baz should be greater than zero")
+	}
+	return nil
+}
+
+func (c *Config) Expand() error {
+	c.key = "value written by Expand()"
+
+	return nil
 }
 
 //
@@ -93,6 +100,7 @@ func main() {
 		&c,
 		revip.WithDefaults(),
 		revip.WithValidation(),
+		revip.WithExpansion(),
 	)
 	if err != nil {
 		panic(err)
