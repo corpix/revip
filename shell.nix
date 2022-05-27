@@ -5,17 +5,7 @@ in with import nixpkgs { inherit config; }; let
     #! ${stdenv.shell}
     set -e
 
-    exec -a shell ${fish}/bin/fish --login --interactive --init-command='
-      set -x root '"$root"'
-      set config $root/.fish.conf
-      set personal_config $root/.personal.fish.conf
-      if test -e $personal_config
-        source $personal_config
-      end
-      if test -e $config
-        source $config
-      end
-    ' "$@"
+    exec -a shell ${fish}/bin/fish --login --interactive "$@"
   '';
   shellHook = ''
     export root=$(pwd)
