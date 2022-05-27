@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/corpix/revip"
 
@@ -10,12 +11,18 @@ import (
 )
 
 type Config struct {
-	Foo *Foo
-	Baz int
-	Dox []string
-	Box []int
-	Fox map[string]*Foo
-	Gox []*Foo
+	// yaml keys must be all lower-case
+	// otherwise you need to tag every field
+	// see: https://github.com/go-yaml/yaml/issues/123
+	SerialNumber int `yaml:"serialNumber"`
+
+	Nested *NestedConfig
+	MapNested map[string]*NestedConfig
+	SliceNested []*NestedConfig
+
+	StringSlice []string
+	IntSlice []int
+
 	key string
 }
 
@@ -23,14 +30,12 @@ func (c *Config) Default() {
 loop:
 	for {
 		switch {
-		case c.Foo == nil:
-			c.Foo = &Foo{Bar: "bar default", Qux: true}
-		case c.Fox == nil:
-			c.Fox = map[string]*Foo{"key": &Foo{}}
-		case c.Gox == nil:
-			c.Gox = []*Foo{
-				&Foo{},
-			}
+		case c.Nested == nil:
+			c.Nested = &NestedConfig{}
+		case c.MapNested == nil:
+			c.MapNested = map[string]*NestedConfig{}
+		case c.SliceNested == nil:
+			c.SliceNested = []*NestedConfig{}
 		default:
 			break loop
 		}
@@ -38,31 +43,41 @@ loop:
 }
 
 func (c *Config) Validate() error {
-	if c.Baz <= 0 {
-		return fmt.Errorf("baz should be greater than zero")
+	if c.Nested.Flag {
+		return fmt.Errorf("nested flag should be false")
+	}
+	if c.SerialNumber <= 0 {
+		return fmt.Errorf("serialNumber should be greater than zero")
+	}
+	if len(c.IntSlice) != 3 {
+		return fmt.Errorf("intSlice length should be 3")
 	}
 	return nil
 }
 
 func (c *Config) Expand() error {
-	c.key = "value written by Expand()"
+	buf, err := ioutil.ReadFile("./key")
+	if err != nil {
+		return err
+	}
+	c.key = string(buf)
 
 	return nil
 }
 
 //
 
-type Foo struct {
-	Bar string
-	Qux bool
+type NestedConfig struct {
+	Value string
+	Flag bool
 }
 
-func (c *Foo) Default() {
+func (c *NestedConfig) Default() {
 loop:
 	for {
 		switch {
-		case c.Bar == "":
-			c.Bar = "default value"
+		case c.Value == "":
+			c.Value = "default"
 		default:
 			break loop
 		}
@@ -73,21 +88,24 @@ loop:
 
 func main() {
 	c := Config{
-		Foo: &Foo{
-			Bar: "bar",
-			Qux: true,
+		Nested: &NestedConfig{
+			Value: "hello world",
+			Flag: true,
 		},
-		Baz: 666,
 	}
 
 	_, err := revip.Load(
 		&c,
 		revip.FromReader(
-			bytes.NewBuffer([]byte(`{"foo":{"qux": false}}`)),
+			bytes.NewBuffer([]byte(`{"nested":{"flag": false}}`)),
 			revip.JsonUnmarshaler,
 		),
 		revip.FromReader(
-			bytes.NewBuffer([]byte(`box = [666,777,888]`)),
+			bytes.NewBuffer([]byte(`serialNumber: 1`)),
+			revip.YamlUnmarshaler,
+		),
+		revip.FromReader(
+			bytes.NewBuffer([]byte(`intSlice = [666,777,888]`)),
 			revip.TomlUnmarshaler,
 		),
 		revip.FromEnviron("revip"),

@@ -18,42 +18,61 @@ It supports:
 
 ### run
 
+Basic example showing basics about configuration loading:
+
+- default values
+- validation rules
+- config expansion (loading `key` from file)
+- working with nested types
+- unmarshaling from JSON, YAML, TOML
+
 ```console
-$ go run ./example/basic/main.go
+$ cd ./example/basic
+$ go run ./main.go
 (main.Config) {
- Foo: (*main.Foo)(0xc00000e540)({
-  Bar: (string) (len=3) "bar",
-  Qux: (bool) false
+ SerialNumber: (int) 1,
+ Nested: (*main.NestedConfig)(0xc00000e0c0)({
+  Value: (string) (len=11) "hello world",
+  Flag: (bool) false
  }),
- Baz: (int) 666,
- Dox: ([]string) <nil>,
- Box: ([]int) (len=3 cap=3) {
+ MapNested: (map[string]*main.NestedConfig) {
+ },
+ SliceNested: ([]*main.NestedConfig) {
+ },
+ StringSlice: ([]string) <nil>,
+ IntSlice: ([]int) (len=3 cap=3) {
   (int) 666,
   (int) 777,
   (int) 888
  },
- Fox: (map[string]*main.Foo) (len=1) {
-  (string) (len=3) "key": (*main.Foo)(0xc00000e960)({
-   Bar: (string) (len=13) "default value",
-   Qux: (bool) false
-  })
- },
- Gox: ([]*main.Foo) (len=1 cap=1) {
-  (*main.Foo)(0xc00000e980)({
-   Bar: (string) (len=13) "default value",
-   Qux: (bool) false
-  })
- },
- key: (string) (len=25) "value written by Expand()"
+ key: (string) (len=18) "super secret value"
 }
 ```
 
-Other things to try:
+Run basic example with some keys befined through environment variables:
+
+> environment variables are defined in `makefile`
 
 ```console
-$ REVIP_FOO_BAR=hello go run ./example/basic/main.go
-$ REVIP_BOX=888,777,666 go run ./example/basic/main.go
-$ REVIP_BAZ=0 go run ./example/basic/main.go
+$ make
+(main.Config) {
+ SerialNumber: (int) 2,
+ Nested: (*main.NestedConfig)(0xc00000e0c0)({
+  Value: (string) (len=12) "\"hello user\"",
+  Flag: (bool) false
+ }),
+ MapNested: (map[string]*main.NestedConfig) {
+ },
+ SliceNested: ([]*main.NestedConfig) {
+ },
+ StringSlice: ([]string) <nil>,
+ IntSlice: ([]int) (len=3 cap=3) {
+  (int) 888,
+  (int) 777,
+  (int) 666
+ },
+ key: (string) (len=18) "super secret value"
+}
 ```
 
 ## license
