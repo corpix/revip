@@ -28,7 +28,6 @@ in with import nixpkgs { inherit config; }; let
     export LANG="en_US.UTF-8"
     export NIX_PATH="nixpkgs=${nixpkgs}"
     export MAKEFLAGS="--no-print-directory"
-    export ETCDCTL_API=3
 
     if [ ! -z "$PS1" ]
     then
@@ -44,8 +43,6 @@ in stdenv.mkDerivation rec {
     git jq tmux findutils gnumake
 
     go gopls golangci-lint
-
-    etcd
   ];
 
   inherit shellHook;

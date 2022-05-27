@@ -106,16 +106,6 @@ lint: # run linter
 
 #### testing
 
-test/etcd/data: # make sure etcd data directory exists
-	mkdir -p $@
-
-.PHONY: run/etcd
-run/etcd: test/etcd/data # run etcd coordinator & kv storage service
-	@bash -xec "cd $(dir $<); exec etcd --data-dir=./data --debug"
-
-clean:: # remove etcd data
-	rm -rf test/etcd/data
-
 #### docker
 
 .PHONY: run/docker/shell

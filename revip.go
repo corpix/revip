@@ -13,7 +13,6 @@ const (
 	SchemeEmpty   = ""
 	SchemeFile    = "file" // file://./config.yml
 	SchemeEnviron = "env"  // env://prefix
-	SchemeEtcd    = "etcd" // etcd://user@password:127.0.0.1:2379/namespace
 )
 
 var (
@@ -21,12 +20,10 @@ var (
 	FromSchemes = []string{
 		SchemeFile,
 		SchemeEnviron,
-		SchemeEtcd,
 	}
 	// ToSchemes represents schemes supported for destrinations.
 	ToSchemes = []string{
 		SchemeFile,
-		SchemeEtcd,
 	}
 )
 

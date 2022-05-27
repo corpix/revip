@@ -7,10 +7,10 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"strings"
 	"syscall"
 
 	json "encoding/json"
+
 	yaml "github.com/go-yaml/yaml"
 	env "github.com/kelseyhightower/envconfig"
 	toml "github.com/pelletier/go-toml"
@@ -95,7 +95,6 @@ func FromEnviron(prefix string) Option {
 // Example URL's:
 //   - file://./config.yml
 //   - env://prefix
-//   - etcd://user@password:127.0.0.1:2379/namespace
 func FromURL(u string, d Unmarshaler) (Option, error) {
 	uu, err := url.Parse(u)
 	if err != nil {
@@ -107,12 +106,6 @@ func FromURL(u string, d Unmarshaler) (Option, error) {
 		return FromFile(path.Join(uu.Host, uu.Path), d), nil
 	case SchemeEnviron:
 		return FromEnviron(uu.Host), nil
-	case SchemeEtcd:
-		c, err := NewEtcdClientFromURL(uu)
-		if err != nil {
-			return nil, err
-		}
-		return FromEtcd(c, strings.TrimPrefix(uu.Path, "/"), d), nil
 	default:
 		return nil, &ErrUnexpectedScheme{
 			Got:      uu.Scheme,
