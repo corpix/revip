@@ -54,12 +54,6 @@ type Expandable interface {
 	Expand() error
 }
 
-// Updateable is an interface which any `Config` could implement
-// to define a custom configuration update logic.
-type Updateable interface {
-	Update(Config) error
-}
-
 // Revip represents configuration loaded by `Load`.
 type Revip struct {
 	// config represents configuration data, it should always be a pointer.
