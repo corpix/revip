@@ -31,10 +31,7 @@ var (
 type Config = interface{}
 
 // Option defines generic interface for configuration source.
-type Option = func(c Config, m ...OptionMeta) error
-
-// OptionMeta is an optional meta-data to be passed to `Option`.
-type OptionMeta interface{}
+type Option = func(c Config) error
 
 // Defaultable is an interface which any `Config` could implement
 // to define a custom default values for sub-tree it owns.
@@ -111,9 +108,9 @@ func New(c Config) *Revip {
 	return &Revip{config: c}
 }
 
-// LoadWithMeta feeds into each `op` `meta` and applies `op` in order to
-// fill the configuration in `v` then constructs a `*Revip` data-structure.
-func LoadWithMeta(v Config, meta []OptionMeta, op ...Option) (*Revip, error) {
+// Load applies each `op` in order to fill the configuration in `v` and
+// constructs a `*Revip` data-structure.
+func Load(v Config, op ...Option) (*Revip, error) {
 	var err error
 	for _, f := range op {
 		err = f(v)
@@ -123,10 +120,4 @@ func LoadWithMeta(v Config, meta []OptionMeta, op ...Option) (*Revip, error) {
 	}
 
 	return New(v), nil
-}
-
-// Load applies each `op` in order to fill the configuration in `v` and
-// constructs a `*Revip` data-structure.
-func Load(v Config, op ...Option) (*Revip, error) {
-	return LoadWithMeta(v, nil, op...)
 }

@@ -12,8 +12,11 @@ func Postprocess(c Config, op ...Option) error {
 func postprocessApply(c Config, path []string, op []Option) error {
 	var err error
 	for _, f := range op {
-		err = f(c, path)
+		err = f(c)
 		if err != nil {
+			if e, ok := err.(*ErrPostprocess); ok {
+				e.Path = path
+			}
 			return err
 		}
 	}
@@ -87,7 +90,7 @@ func postprocess(c Config, path []string, op []Option) error {
 //
 
 func WithDefaults() Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		var err error
 
 		v, ok := c.(Defaultable)
@@ -104,7 +107,7 @@ func WithDefaults() Option {
 }
 
 func WithValidation() Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		var err error
 
 		v, ok := c.(Validatable)
@@ -116,13 +119,8 @@ func WithValidation() Option {
 
 			err = v.Validate()
 			if err != nil {
-				var path []string
-				if len(m) > 0 {
-					path = m[0].([]string)
-				}
 				return &ErrPostprocess{
 					Type: reflect.TypeOf(c).String(),
-					Path: path,
 					Err:  err,
 				}
 			}
@@ -132,7 +130,7 @@ func WithValidation() Option {
 }
 
 func WithExpansion() Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		var err error
 
 		v, ok := c.(Expandable)
@@ -144,13 +142,8 @@ func WithExpansion() Option {
 
 			err = v.Expand()
 			if err != nil {
-				var path []string
-				if len(m) > 0 {
-					path = m[0].([]string)
-				}
 				return &ErrPostprocess{
 					Type: reflect.TypeOf(c).String(),
-					Path: path,
 					Err:  err,
 				}
 			}

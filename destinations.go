@@ -27,7 +27,7 @@ var (
 // ToWriter is an `Option` constructor which creates a thunk
 // to write configuration to `r` and encode it with `f` marshaler.
 func ToWriter(w io.Writer, f Marshaler) Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func ToWriter(w io.Writer, f Marshaler) Option {
 // to write configuration to file addressable by `path` with
 // content encoded with `f` marshaler.
 func ToFile(path string, f Marshaler) Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
 			return err
@@ -59,7 +59,7 @@ func ToFile(path string, f Marshaler) Option {
 		}
 		defer r.Close()
 
-		return ToWriter(r, f)(c, m...)
+		return ToWriter(r, f)(c)
 	}
 }
 

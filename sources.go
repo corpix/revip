@@ -31,7 +31,7 @@ var (
 // to read configuration from `r` and decode it with `f` unmarshaler.
 // Current implementation buffers all data in memory.
 func FromReader(r io.Reader, f Unmarshaler) Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
 			return err
@@ -48,9 +48,9 @@ func FromReader(r io.Reader, f Unmarshaler) Option {
 
 // FromFile is an `Option` constructor which creates a thunk
 // to read configuration from file addressable by `path` with
-// conmtent decoded with `f` unmarshaler.
+// content decoded with `f` unmarshaler.
 func FromFile(path string, f Unmarshaler) Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
 			return err
@@ -71,7 +71,7 @@ func FromFile(path string, f Unmarshaler) Option {
 		}
 		defer r.Close()
 
-		return FromReader(r, f)(c, m...)
+		return FromReader(r, f)(c)
 	}
 }
 
@@ -79,7 +79,7 @@ func FromFile(path string, f Unmarshaler) Option {
 // to read configuration from environment.
 // It uses `github.com/kelseyhightower/envconfig` underneath.
 func FromEnviron(prefix string) Option {
-	return func(c Config, m ...OptionMeta) error {
+	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
 			return err
