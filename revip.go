@@ -70,6 +70,17 @@ func (r *Revip) DeepCopy(v interface{}) error {
 	return mapstructure.Decode(r.config, v)
 }
 
+// Clone returns a deep copy of the configuration with the same type.
+func (r *Revip) Clone() (Config, error) {
+	t := reflect.TypeOf(r.config)
+	v := reflect.New(t).Interface()
+	err := r.DeepCopy(v)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
 // Path uses dot notation to retrieve substruct addressable by `path` or
 // return an error if key was not found(`ErrNotFound`) or
 // something gone terribly wrong.
