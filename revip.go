@@ -51,27 +51,27 @@ type Expandable interface {
 	Expand() error
 }
 
-// Revip represents configuration loaded by `Load`.
-type Revip struct {
+// Container represents configuration loaded by `Load`.
+type Container struct {
 	// config represents configuration data, it should always be a pointer.
 	config Config
 }
 
 // Unwrap returns a pointer to the inner configuration data structure.
-func (r *Revip) Unwrap() interface{} { return r.config }
+func (r *Container) Unwrap() interface{} { return r.config }
 
 // Copy writes a shallow copy of the configuration into `v`.
-func (r *Revip) Copy(v interface{}) error {
+func (r *Container) Copy(v interface{}) error {
 	return mapstructure.WeakDecode(r.config, v)
 }
 
 // DeepCopy writes a deep copy of the configuration into `v`.
-func (r *Revip) DeepCopy(v interface{}) error {
+func (r *Container) DeepCopy(v interface{}) error {
 	return mapstructure.Decode(r.config, v)
 }
 
 // Clone returns a deep copy of the configuration with the same type.
-func (r *Revip) Clone() (Config, error) {
+func (r *Container) Clone() (Config, error) {
 	t := reflect.TypeOf(r.config)
 	v := reflect.New(t).Interface()
 	err := r.DeepCopy(v)
@@ -84,7 +84,7 @@ func (r *Revip) Clone() (Config, error) {
 // Path uses dot notation to retrieve substruct addressable by `path` or
 // return an error if key was not found(`ErrNotFound`) or
 // something gone terribly wrong.
-func (r *Revip) Path(dst Config, path string) error {
+func (r *Container) Path(dst Config, path string) error {
 	found := false
 
 	err := walkStruct(r.config, func(v reflect.Value, xs []string) error {
@@ -111,17 +111,17 @@ func (r *Revip) Path(dst Config, path string) error {
 }
 
 // New wraps configuration represented by `c` with come useful methods.
-func New(c Config) *Revip {
+func New(c Config) *Container {
 	if reflect.TypeOf(c).Kind() != reflect.Ptr {
 		panic("config must be a pointer")
 	}
 
-	return &Revip{config: c}
+	return &Container{config: c}
 }
 
 // Load applies each `op` in order to fill the configuration in `v` and
 // constructs a `*Revip` data-structure.
-func Load(v Config, op ...Option) (*Revip, error) {
+func Load(v Config, op ...Option) (*Container, error) {
 	var err error
 	for _, f := range op {
 		err = f(v)
