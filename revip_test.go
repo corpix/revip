@@ -2,10 +2,12 @@ package revip
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"os"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -212,4 +214,10 @@ func TestRevipPostprocess(t *testing.T) {
 		bool(false),
 		*fvv,
 	)
+}
+
+func TestRevipEmptyClone(t *testing.T) {
+	type TestConfig struct {}
+	container := New(&TestConfig{})
+	assert.Equal(t, "*revip.TestConfig", fmt.Sprintf("%T", container.EmptyClone()))
 }

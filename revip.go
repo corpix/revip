@@ -63,7 +63,7 @@ func (r *Container) Unwrap() Config { return r.config }
 // EmptyClone returns empty configuration type clone.
 func (r *Container) EmptyClone() Config {
 	t := reflect.TypeOf(r.config)
-	return reflect.New(t).Interface()
+	return reflect.New(t).Elem().Interface()
 }
 
 // Empty allocates a new empty configuration, discarding any previously loaded data.
