@@ -9,10 +9,34 @@ func Postprocess(c Config, op ...Option) error {
 	return postprocess(c, nil, op)
 }
 
-func postprocessApply(c Config, path []string, op []Option) error {
+func postprocess(c Config, path []string, options []Option) error {
+	value := reflect.ValueOf(c)
+	valueType := reflect.TypeOf(c)
+	kind := valueType.Kind()
+
+	if kind == reflect.Ptr {
+		if value.IsNil() {
+			return nil // NOTE: skip nil's, this mean we don't have a default value
+		}
+
+		value = indirectValue(value)
+		valueType = indirectType(valueType)
+		kind = valueType.Kind()
+	}
+
+	switch kind {
+	case reflect.Struct:
+	case reflect.Array, reflect.Slice:
+	case reflect.Map:
+	default:
+		return nil
+	}
+
+	//
+
 	var err error
-	for _, f := range op {
-		err = f(c)
+	for _, option := range options {
+		err = option(c)
 		if err != nil {
 			if e, ok := err.(*ErrPostprocess); ok {
 				e.Path = path
@@ -20,41 +44,16 @@ func postprocessApply(c Config, path []string, op []Option) error {
 			return err
 		}
 	}
-	return nil
-}
-
-func postprocess(c Config, path []string, op []Option) error {
-	err := postprocessApply(c, path, op)
-	if err != nil {
-		return err
-	}
-
-	//
-
-	kind := reflect.TypeOf(c).Kind()
-	value := reflect.ValueOf(c)
 
 	//
 
 	switch kind {
-	case reflect.Ptr:
-		if value.IsNil() {
-			return nil // NOTE: skip nil's, this mean we don't have a default value
-		}
-
-		// FIXME: will call op twice if receiver is not pointer, not sure how to fix atm
-		v := indirectValue(value)
-		return postprocess(
-			v.Interface(),
-			path,
-			op,
-		)
 	case reflect.Struct:
 		return walkStruct(c, func(v reflect.Value, xs []string) error {
 			return postprocess(
 				v.Interface(),
 				append(path, xs...),
-				op,
+				options,
 			)
 		})
 	case reflect.Array, reflect.Slice:
@@ -62,7 +61,7 @@ func postprocess(c Config, path []string, op []Option) error {
 			err := postprocess(
 				value.Index(n).Interface(),
 				append(path, fmt.Sprintf("[%d]", n)),
-				op,
+				options,
 			)
 			if err != nil {
 				return err
@@ -73,15 +72,13 @@ func postprocess(c Config, path []string, op []Option) error {
 			err := postprocess(
 				value.MapIndex(k).Interface(),
 				append(path, fmt.Sprintf("[%q]", k.String())),
-				op,
+				options,
 			)
 			if err != nil {
 				return err
 			}
 
 		}
-	default:
-		return nil
 	}
 
 	return nil

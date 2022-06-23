@@ -111,6 +111,7 @@ func (f *FooPostprocess) Validate() error {
 var (
 	configPostprocessDefaultCalled  = 0
 	configPostprocessValidateCalled = 0
+	configPostprocessOptionCalled   = 0
 )
 
 type ConfigPostprocess struct {
@@ -157,6 +158,10 @@ func TestRevipPostprocess(t *testing.T) {
 		&c,
 		WithDefaults(),
 		WithValidation(),
+		func(Config) error {
+			configPostprocessOptionCalled++
+			return nil
+		},
 	)
 	if err != nil {
 		t.Error(err)
@@ -166,6 +171,7 @@ func TestRevipPostprocess(t *testing.T) {
 
 	assert.Equal(t, 1, configPostprocessDefaultCalled)
 	assert.Equal(t, 1, configPostprocessValidateCalled)
+	assert.Equal(t, 5, configPostprocessOptionCalled)
 	assert.Equal(t, 1, fooPostprocessDefaultCalled)
 	assert.Equal(t, 1, fooPostprocessValidateCalled)
 

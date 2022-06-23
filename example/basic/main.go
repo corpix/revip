@@ -16,12 +16,12 @@ type Config struct {
 	// see: https://github.com/go-yaml/yaml/issues/123
 	SerialNumber int `yaml:"serialNumber"`
 
-	Nested *NestedConfig
-	MapNested map[string]*NestedConfig
+	Nested      *NestedConfig
+	MapNested   map[string]*NestedConfig
 	SliceNested []*NestedConfig
 
 	StringSlice []string
-	IntSlice []int
+	IntSlice    []int
 
 	key string
 }
@@ -69,7 +69,7 @@ func (c *Config) Expand() error {
 
 type NestedConfig struct {
 	Value string
-	Flag bool
+	Flag  bool
 }
 
 func (c *NestedConfig) Default() {
@@ -90,7 +90,7 @@ func main() {
 	c := Config{
 		Nested: &NestedConfig{
 			Value: "hello world",
-			Flag: true,
+			Flag:  true,
 		},
 	}
 
