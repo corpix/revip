@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
-
+	"reflect"
 	"os"
 
 	"github.com/stretchr/testify/assert"
@@ -219,5 +219,14 @@ func TestRevipPostprocess(t *testing.T) {
 func TestRevipEmptyClone(t *testing.T) {
 	type TestConfig struct {}
 	container := New(&TestConfig{})
-	assert.Equal(t, "*revip.TestConfig", fmt.Sprintf("%T", container.EmptyClone()))
+	assert.Equal(
+		t,
+		"*revip.TestConfig",
+		fmt.Sprintf("%T", container.EmptyClone()),
+	)
+	assert.Equal(
+		t,
+		false,
+		reflect.ValueOf(container.EmptyClone()).IsNil(),
+	)
 }
