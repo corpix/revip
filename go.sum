@@ -1,5 +1,5 @@
-github.com/corpix/yaml v0.0.0-20220706142132-cc85bc9b2427 h1:8U89xauWF+aTKzpcG9C7ZeIJuCAPQqXzRfpqBqTVJGM=
-github.com/corpix/yaml v0.0.0-20220706142132-cc85bc9b2427/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
+github.com/corpix/yaml v0.0.0-20220706182535-91862f77ddd0 h1:YUfvTTt9lizAkhBcEY3YcZl5vBXl4G16+AzHRFbeJvA=
+github.com/corpix/yaml v0.0.0-20220706182535-91862f77ddd0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
