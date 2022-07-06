@@ -11,7 +11,7 @@ import (
 
 	json "encoding/json"
 
-	yaml "github.com/go-yaml/yaml"
+	yaml "gopkg.in/yaml.v2"
 	env "github.com/kelseyhightower/envconfig"
 	toml "github.com/pelletier/go-toml"
 )

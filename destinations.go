@@ -9,7 +9,7 @@ import (
 
 	json "encoding/json"
 
-	yaml "github.com/go-yaml/yaml"
+	yaml "gopkg.in/yaml.v2"
 	toml "github.com/pelletier/go-toml"
 )
 
