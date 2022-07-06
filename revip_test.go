@@ -3,9 +3,9 @@ package revip
 import (
 	"bytes"
 	"fmt"
-	"testing"
-	"reflect"
 	"os"
+	"reflect"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -21,11 +21,19 @@ type FooSimple struct {
 	Bar string
 	Qux bool
 }
+type GoxInline struct {
+	A string
+	B string
+}
+type GoxSimple struct {
+	*GoxInline `yaml:",inline"`
+}
 type ConfigSimple struct {
 	Foo FooSimple
 	Baz int
 	Dox []string
 	Box []int
+	Gox GoxSimple
 }
 
 func TestRevipSimple(t *testing.T) {
@@ -59,6 +67,7 @@ func TestRevipSimple(t *testing.T) {
 			Foo: FooSimple{Bar: "qux", Qux: false},
 			Baz: 777,
 			Box: []int{666, 777, 888},
+			Gox: GoxSimple{GoxInline: &GoxInline{}},
 		},
 		c,
 	)
@@ -217,7 +226,7 @@ func TestRevipPostprocess(t *testing.T) {
 }
 
 func TestRevipEmptyClone(t *testing.T) {
-	type TestConfig struct {}
+	type TestConfig struct{}
 	container := New(&TestConfig{})
 	assert.Equal(
 		t,
