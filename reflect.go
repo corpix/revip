@@ -1,8 +1,9 @@
 package revip
 
 import (
-	"errors"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 func indirectValue(reflectValue reflect.Value) reflect.Value {
@@ -35,11 +36,11 @@ func expectKind(reflectType reflect.Type, ks ...reflect.Kind) error {
 		}
 	}
 
-	return &ErrUnexpectedKind{
+	return errors.WithStack(&ErrUnexpectedKind{
 		Type:     reflectType,
 		Got:      k,
 		Expected: ks,
-	}
+	})
 }
 
 //
@@ -79,7 +80,7 @@ func walkStructIter(v reflect.Value, path []string, cb func(reflect.Value, []str
 
 	switch k {
 	case reflect.Ptr:
-		if !v.IsNil() {
+		if !isnil(v) {
 			return walkStructIter(
 				indirectValue(v),
 				path, cb,

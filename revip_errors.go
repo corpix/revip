@@ -79,11 +79,16 @@ type ErrUnexpectedKind struct {
 }
 
 func (e *ErrUnexpectedKind) Error() string {
+	var expected string
+	if len(e.Expected) > 1 {
+		expected = fmt.Sprintf("one of %q", e.Expected)
+	} else {
+		expected = fmt.Sprintf("%q", e.Expected[0])
+	}
 	return fmt.Sprintf(
-		"unexpected kind %s for type %s, expected one of %s",
+		"unexpected kind %s for type %s, expected "+expected,
 		e.Got,
 		e.Type,
-		e.Expected,
 	)
 }
 
