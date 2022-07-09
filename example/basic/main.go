@@ -20,25 +20,26 @@ type Config struct {
 	MapNested   map[string]*NestedConfig
 	SliceNested []*NestedConfig
 
-	StringSlice []string
-	IntSlice    []int
+	StringSlice        []string
+	IntSlice           []int
+
+	*EmbeddedConfig `yaml:",inline,omitempty"`
 
 	key string
 }
 
 func (c *Config) Default() {
-loop:
-	for {
-		switch {
-		case c.Nested == nil:
-			c.Nested = &NestedConfig{}
-		case c.MapNested == nil:
-			c.MapNested = map[string]*NestedConfig{}
-		case c.SliceNested == nil:
-			c.SliceNested = []*NestedConfig{}
-		default:
-			break loop
-		}
+	if c.Nested == nil {
+		c.Nested = &NestedConfig{}
+	}
+	if c.MapNested == nil {
+		c.MapNested = map[string]*NestedConfig{}
+	}
+	if c.SliceNested == nil {
+		c.SliceNested = []*NestedConfig{}
+	}
+	if c.EmbeddedConfig == nil {
+		c.EmbeddedConfig = &EmbeddedConfig{}
 	}
 }
 
@@ -86,6 +87,21 @@ loop:
 
 //
 
+type (
+	EmbeddedConfig struct {
+		EmbeddedStrField string `yaml:"str"`
+		EmbeddedIntField int `yaml:"int"`
+	}
+)
+
+func (c *EmbeddedConfig) Default() {
+	if c.EmbeddedStrField == "" {
+		c.EmbeddedStrField = "embedded field"
+	}
+}
+
+//
+
 func main() {
 	c := Config{
 		Nested: &NestedConfig{
@@ -101,7 +117,7 @@ func main() {
 			revip.JsonUnmarshaler,
 		),
 		revip.FromReader(
-			bytes.NewBuffer([]byte(`serialNumber: 1`)),
+			bytes.NewBuffer([]byte(`{serialNumber: 1, int: 666}`)),
 			revip.YamlUnmarshaler,
 		),
 		revip.FromReader(
