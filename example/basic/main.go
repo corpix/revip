@@ -10,23 +10,37 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-type Config struct {
-	// yaml keys must be all lower-case
-	// otherwise you need to tag every field
-	// see: https://github.com/go-yaml/yaml/issues/123
-	SerialNumber int `yaml:"serialNumber"`
+type (
+	Config struct {
+		// yaml keys must be all lower-case
+		// otherwise you need to tag every field
+		// see: https://github.com/go-yaml/yaml/issues/123
+		SerialNumber int `yaml:"serialNumber"`
 
-	Nested      *NestedConfig
-	MapNested   map[string]*NestedConfig
-	SliceNested []*NestedConfig
+		Nested      *NestedConfig
+		MapNested   map[string]*NestedConfig
+		SliceNested []*NestedConfig
 
-	StringSlice        []string
-	IntSlice           []int
+		StringSlice []string
+		IntSlice    []int
 
-	*EmbeddedConfig `yaml:",inline,omitempty"`
+		*EmbeddedConfig `yaml:",inline,omitempty"`
 
-	key string
-}
+		key string
+	}
+	NestedConfig struct {
+		Value string
+		Flag  bool
+	}
+	EmbeddedConfig struct {
+		EmbeddedStrField      string `yaml:"str"`
+		EmbeddedIntField      int    `yaml:"int"`
+		*DeeplyEmbeddedConfig `yaml:",inline,omitempty"`
+	}
+	DeeplyEmbeddedConfig struct {
+		DeeplyEmbeddedStrField string `yaml:"deep-str"`
+	}
+)
 
 func (c *Config) Default() {
 	if c.Nested == nil {
@@ -66,13 +80,6 @@ func (c *Config) Expand() error {
 	return nil
 }
 
-//
-
-type NestedConfig struct {
-	Value string
-	Flag  bool
-}
-
 func (c *NestedConfig) Default() {
 loop:
 	for {
@@ -85,25 +92,35 @@ loop:
 	}
 }
 
-//
-
-type (
-	EmbeddedConfig struct {
-		EmbeddedStrField string `yaml:"str"`
-		EmbeddedIntField int `yaml:"int"`
-	}
-)
-
 func (c *EmbeddedConfig) Default() {
 	if c.EmbeddedStrField == "" {
 		c.EmbeddedStrField = "embedded field"
 	}
 }
+func (c *EmbeddedConfig) Validate() error {
+	// shadow Validate() inherited from DeeplyEmbeddedConfig
+	// or validation will fail, because default value set in Default()
+	// method and we Postprocess() tree level by level from top to bottom
+	return nil
+}
+
+func (c *DeeplyEmbeddedConfig) Default() {
+	if c.DeeplyEmbeddedStrField == "" {
+		c.DeeplyEmbeddedStrField = "deeply embedded field"
+	}
+}
+
+func (c *DeeplyEmbeddedConfig) Validate() error {
+	if c.DeeplyEmbeddedStrField == "" {
+		return fmt.Errorf("deep-str should not be empty")
+	}
+	return nil
+}
 
 //
 
 func main() {
-	c := Config{
+	c := &Config{
 		Nested: &NestedConfig{
 			Value: "hello world",
 			Flag:  true,
@@ -111,7 +128,7 @@ func main() {
 	}
 
 	_, err := revip.Load(
-		&c,
+		c,
 		revip.FromReader(
 			bytes.NewBuffer([]byte(`{"nested":{"flag": false}}`)),
 			revip.JsonUnmarshaler,
@@ -131,7 +148,7 @@ func main() {
 	}
 
 	err = revip.Postprocess(
-		&c,
+		c,
 		revip.WithDefaults(),
 		revip.WithValidation(),
 		revip.WithExpansion(),

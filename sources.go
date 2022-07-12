@@ -16,8 +16,10 @@ import (
 	toml "github.com/pelletier/go-toml"
 )
 
+type SourceOption func(c Config) error
+
 // Unmarshaler describes a generic unmarshal interface for data decoding
-// which could be used to extend supported formats by defining new `Option`
+// which could be used to extend supported formats by defining new `SourceOption`
 // implementations.
 type Unmarshaler = func(in []byte, v interface{}) error
 
@@ -27,10 +29,10 @@ var (
 	TomlUnmarshaler Unmarshaler = toml.Unmarshal
 )
 
-// FromReader is an `Option` constructor which creates a thunk
+// FromReader is an `SourceOption` constructor which creates a thunk
 // to read configuration from `r` and decode it with `f` unmarshaler.
 // Current implementation buffers all data in memory.
-func FromReader(r io.Reader, f Unmarshaler) Option {
+func FromReader(r io.Reader, f Unmarshaler) SourceOption {
 	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
@@ -46,10 +48,10 @@ func FromReader(r io.Reader, f Unmarshaler) Option {
 	}
 }
 
-// FromFile is an `Option` constructor which creates a thunk
+// FromFile is an `SourceOption` constructor which creates a thunk
 // to read configuration from file addressable by `path` with
 // content decoded with `f` unmarshaler.
-func FromFile(path string, f Unmarshaler) Option {
+func FromFile(path string, f Unmarshaler) SourceOption {
 	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
@@ -75,10 +77,10 @@ func FromFile(path string, f Unmarshaler) Option {
 	}
 }
 
-// FromEnviron is an `Option` constructor which creates a thunk
+// FromEnviron is an `SourceOption` constructor which creates a thunk
 // to read configuration from environment.
 // It uses `github.com/kelseyhightower/envconfig` underneath.
-func FromEnviron(prefix string) Option {
+func FromEnviron(prefix string) SourceOption {
 	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
@@ -95,7 +97,7 @@ func FromEnviron(prefix string) Option {
 // Example URL's:
 //   - file://./config.yml
 //   - env://prefix
-func FromURL(u string, d Unmarshaler) (Option, error) {
+func FromURL(u string, d Unmarshaler) (SourceOption, error) {
 	uu, err := url.Parse(u)
 	if err != nil {
 		return nil, err

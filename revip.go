@@ -2,12 +2,9 @@ package revip
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/mitchellh/mapstructure"
 )
-
-const PathDelimiter = "."
 
 const (
 	SchemeEmpty   = ""
@@ -28,10 +25,7 @@ var (
 )
 
 // Config is a configuration represented by user-specified type.
-type Config = interface{}
-
-// Option defines generic interface for configuration source.
-type Option = func(c Config) error
+type Config interface{}
 
 // Defaultable is an interface which any `Config` could implement
 // to define a custom default values for sub-tree it owns.
@@ -55,6 +49,7 @@ type Expandable interface {
 type Container struct {
 	// config represents configuration data, it should always be a pointer.
 	config Config
+	index  map[string]Tree
 }
 
 // Unwrap returns a pointer to the inner configuration data structure.
@@ -110,30 +105,20 @@ func (r *Container) DeepClone() (Config, error) {
 // Path uses dot notation to retrieve substruct addressable by `path` or
 // return an error if key was not found(`ErrNotFound`) or
 // something gone terribly wrong.
-func (r *Container) Path(dst Config, path string) error {
-	found := false
-
-	err := walkStruct(r.config, func(v reflect.Value, xs []string) error {
-		if strings.Join(xs, PathDelimiter) == path {
-			found = true
-			err := mapstructure.WeakDecode(v.Interface(), dst)
-			if err != nil {
-				return err
-			}
-			return stopIteration
-		}
-
-		return nil
-	})
-	if err != nil {
-		return err
+func (r *Container) Path(path string) (Config, error) {
+	if r.index == nil {
+		r.index = map[string]Tree{}
+		_, _ = NewTree(reflect.ValueOf(r.config), func(t Tree) error {
+			r.index[TreePathString(t)] = t
+			return nil
+		})
+	}
+	v, ok := r.index[path]
+	if !ok {
+		return nil, &ErrPathNotFound{Path: path}
 	}
 
-	if !found {
-		return &ErrPathNotFound{Path: path}
-	}
-
-	return nil
+	return v, nil
 }
 
 // Default postprocess configuration with default values or returns an error.
@@ -160,11 +145,11 @@ func New(c Config) *Container {
 	return &Container{config: c}
 }
 
-// Load applies each `op` in order to fill the configuration in `v` and
+// Load applies each `options` in order to fill the configuration in `v` and
 // constructs a `*Revip` data-structure.
-func Load(v Config, op ...Option) (*Container, error) {
+func Load(v Config, options ...SourceOption) (*Container, error) {
 	var err error
-	for _, f := range op {
+	for _, f := range options {
 		err = f(v)
 		if err != nil {
 			return nil, err

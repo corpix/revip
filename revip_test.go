@@ -1,241 +1,171 @@
 package revip
 
 import (
-	"bytes"
-	"fmt"
-	"os"
-	"reflect"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	os.Setenv("REVIP_BAZ", "777")
-	os.Setenv("REVIP_FOO_BAR", "qux")
+type (
+	TestConfig struct {
+		Name     string              `yaml:"name"`
+		Amount   int                 `yaml:"amount"`
+		Provider *TestProviderConfig `yaml:"provider"`
+
+		nonce int
+	}
+	TestProviderConfig struct {
+		Type   string                    `yaml:"type"`
+		Simple *TestSimpleProviderConfig `yaml:"simple"`
+		Inline *TestInlineProviderConfig `yaml:"inline"`
+	}
+	TestBaseProviderConfig struct {
+		Rate     int                           `yaml:"rate"`
+		Auto     *bool                         `yaml:"auto"`
+		Actions  []*TestActionConfig           `yaml:"actions"`
+		Handlers map[string]*TestHandlerConfig `yaml:"handlers"`
+	}
+	TestActionConfig struct {
+		Name string `yaml:"name"`
+	}
+	TestHandlerConfig struct {
+		Name string `yaml:"name"`
+	}
+	TestSimpleProviderConfig struct {
+		Base *TestBaseProviderConfig `yaml:"base"`
+	}
+	TestInlineProviderConfig struct {
+		Base *TestBaseProviderConfig `yaml:",inline"`
+	}
+)
+
+func (c *TestConfig) Default() {
+	if c.Amount == 0 {
+		c.Amount = 10
+	}
+	if c.Provider == nil {
+		c.Provider = &TestProviderConfig{}
+	}
+}
+func (c *TestProviderConfig) Default() {
+	if c.Type == "" {
+		c.Type = "simple"
+	}
+	if c.Type == "simple" && c.Simple == nil {
+		c.Simple = &TestSimpleProviderConfig{}
+	}
+	if c.Type == "inline" && c.Inline == nil {
+		c.Inline = &TestInlineProviderConfig{Base: &TestBaseProviderConfig{}}
+	}
+}
+func (c *TestBaseProviderConfig) Default() {
+	if len(c.Handlers) == 0 {
+		c.Handlers = map[string]*TestHandlerConfig{
+			"/": {Name: "root"},
+		}
+	}
+}
+
+func (c *TestProviderConfig) Validate() error {
+	if c.Type == "" {
+		return errors.New("type should not be empty")
+	}
+	return nil
+}
+func (c *TestConfig) Validate() error {
+	if c.Name == "" {
+		return errors.New("name should not be empty")
+	}
+	return nil
+}
+
+func (c *TestConfig) Expand() error {
+	c.nonce += 1
+	return nil
 }
 
 //
 
-type FooSimple struct {
-	Bar string
-	Qux bool
-}
-type GoxInline struct {
-	A string
-	B string
-}
-type GoxSimple struct {
-	*GoxInline `yaml:",inline"`
-}
-type ConfigSimple struct {
-	Foo FooSimple
-	Baz int
-	Dox []string
-	Box []int
-	Gox GoxSimple
-}
-
-func TestRevipSimple(t *testing.T) {
-	c := ConfigSimple{
-		Foo: FooSimple{
-			Bar: "bar",
-			Qux: true,
-		},
-		Baz: 666,
-	}
-
-	r, err := Load(
-		&c,
-		FromReader(
-			bytes.NewBuffer([]byte(`foo: { qux: false }`)),
-			YamlUnmarshaler,
-		),
-		FromReader(
-			bytes.NewBuffer([]byte(`box = [666,777,888]`)),
-			TomlUnmarshaler,
-		),
-		FromEnviron("revip"),
-	)
+func TestConfigDefaults(t *testing.T) {
+	c := &TestConfig{}
+	err := Postprocess(c, WithDefaults())
 	if err != nil {
 		t.Error(err)
 	}
 
-	assert.Equal(
-		t,
-		ConfigSimple{
-			Foo: FooSimple{Bar: "qux", Qux: false},
-			Baz: 777,
-			Box: []int{666, 777, 888},
-			Gox: GoxSimple{GoxInline: &GoxInline{}},
-		},
-		c,
-	)
+	assert.Equal(t, "", c.Name)
+	assert.Equal(t, 10, c.Amount)
+	assert.NotNil(t, c.Provider)
+	assert.Equal(t, "simple", c.Provider.Type)
+	assert.NotNil(t, c.Provider.Simple)
+	assert.Nil(t, c.Provider.Inline)
+	assert.Nil(t, c.Provider.Simple.Base)
+}
 
-	//
-
-	fv := FooSimple{}
-	err = r.Path(&fv, "Foo")
+func TestConfigDefaultsDependant(t *testing.T) {
+	c := &TestConfig{Provider: &TestProviderConfig{Type: "inline"}}
+	err := Postprocess(c, WithDefaults())
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(
-		t,
-		FooSimple{Bar: "qux", Qux: false},
-		fv,
-	)
 
-	//
-
-	fvv := new(bool)
-	err = r.Path(fvv, "Foo.Qux")
-	if err != nil {
-		t.Error(err)
-	}
-	assert.Equal(
-		t,
-		bool(false),
-		*fvv,
-	)
+	assert.Equal(t, "", c.Name)
+	assert.Equal(t, 10, c.Amount)
+	assert.NotNil(t, c.Provider)
+	assert.Equal(t, "inline", c.Provider.Type)
+	assert.Nil(t, c.Provider.Simple)
+	assert.NotNil(t, c.Provider.Inline)
+	assert.NotNil(t, c.Provider.Inline.Base)
+	assert.Equal(t, "root", c.Provider.Inline.Base.Handlers["/"].Name)
 }
 
 //
 
-var (
-	fooPostprocessDefaultCalled  = 0
-	fooPostprocessValidateCalled = 0
-)
+func TestConfigValidation(t *testing.T) {
+	c := &TestConfig{}
+	err := Postprocess(c, WithValidation())
+	assert.NotNil(t, err)
+	assert.Equal(t, "postprocessing failed at .TestConfig: name should not be empty", err.Error())
 
-type FooPostprocess struct {
-	Bar string
-	Qux bool
+	c.Name = "foo" // should not enter nil configurations
+	err = Postprocess(c, WithValidation())
+	assert.Nil(t, err)
+
+	c.Provider = &TestProviderConfig{}
+	err = Postprocess(c, WithValidation())
+	assert.NotNil(t, err)
+	assert.Equal(t, "postprocessing failed at .TestConfig.TestConfig.Provider: type should not be empty", err.Error())
 }
 
-func (f *FooPostprocess) Default() {
-	fooPostprocessDefaultCalled++
-}
-func (f *FooPostprocess) Validate() error {
-	fooPostprocessValidateCalled++
-	return nil
-}
+//
 
-var (
-	configPostprocessDefaultCalled  = 0
-	configPostprocessValidateCalled = 0
-	configPostprocessOptionCalled   = 0
-)
-
-type ConfigPostprocess struct {
-	Foo *FooPostprocess
-	Baz int
-	Dox []string
-	Box []int
-}
-
-func (f *ConfigPostprocess) Default() {
-	configPostprocessDefaultCalled++
-}
-func (f *ConfigPostprocess) Validate() error {
-	configPostprocessValidateCalled++
-	return nil
-}
-
-func TestRevipPostprocess(t *testing.T) {
-	c := ConfigPostprocess{
-		Foo: &FooPostprocess{
-			Bar: "bar",
-			Qux: true,
-		},
-		Baz: 666,
-	}
-
-	r, err := Load(
-		&c,
-		FromReader(
-			bytes.NewBuffer([]byte(`foo: { qux: false }`)),
-			YamlUnmarshaler,
-		),
-		FromReader(
-			bytes.NewBuffer([]byte(`box = [666,777,888]`)),
-			TomlUnmarshaler,
-		),
-		FromEnviron("revip"),
-	)
+func TestConfigNoNilPointers(t *testing.T) {
+	c := &TestConfig{}
+	err := Postprocess(c, WithNoNilPointers())
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = Postprocess(
-		&c,
-		WithDefaults(),
-		WithValidation(),
-		func(Config) error {
-			configPostprocessOptionCalled++
-			return nil
-		},
-	)
-	if err != nil {
-		t.Error(err)
-	}
-
-	//
-
-	assert.Equal(t, 1, configPostprocessDefaultCalled)
-	assert.Equal(t, 1, configPostprocessValidateCalled)
-	assert.Equal(t, 5, configPostprocessOptionCalled)
-	assert.Equal(t, 1, fooPostprocessDefaultCalled)
-	assert.Equal(t, 1, fooPostprocessValidateCalled)
-
-	//
-
-	assert.Equal(
-		t,
-		ConfigPostprocess{
-			Foo: &FooPostprocess{Bar: "qux", Qux: false},
-			Baz: 777,
-			Box: []int{666, 777, 888},
-		},
-		c,
-	)
-
-	//
-
-	fv := FooPostprocess{}
-	err = r.Path(&fv, "Foo")
-	if err != nil {
-		t.Error(err)
-	}
-	assert.Equal(
-		t,
-		FooPostprocess{Bar: "qux", Qux: false},
-		fv,
-	)
-
-	//
-
-	fvv := new(bool)
-	err = r.Path(fvv, "Foo.Qux")
-	if err != nil {
-		t.Error(err)
-	}
-	assert.Equal(
-		t,
-		bool(false),
-		*fvv,
-	)
+	assert.NotNil(t, c.Provider)
+	assert.NotNil(t, c.Provider.Simple)
+	assert.NotNil(t, c.Provider.Simple.Base)
+	assert.NotNil(t, c.Provider.Simple.Base.Actions)
+	assert.NotNil(t, c.Provider.Simple.Base.Handlers)
+	assert.NotNil(t, c.Provider.Inline)
+	assert.NotNil(t, c.Provider.Inline.Base)
+	assert.NotNil(t, c.Provider.Inline.Base.Actions)
+	assert.NotNil(t, c.Provider.Inline.Base.Handlers)
 }
 
-func TestRevipEmptyClone(t *testing.T) {
-	type TestConfig struct{}
-	container := New(&TestConfig{})
-	assert.Equal(
-		t,
-		"*revip.TestConfig",
-		fmt.Sprintf("%T", container.EmptyClone()),
-	)
-	assert.Equal(
-		t,
-		false,
-		reflect.ValueOf(container.EmptyClone()).IsNil(),
-	)
+//
+
+func TestConfigExpansion(t *testing.T) {
+	c := &TestConfig{}
+	err := Postprocess(c, WithExpansion())
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, 1, c.nonce)
 }

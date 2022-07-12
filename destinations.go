@@ -13,6 +13,8 @@ import (
 	toml "github.com/pelletier/go-toml"
 )
 
+type DestinationOption func(c Config) error
+
 // Marshaler describes a generic marshal interface for data encoding
 // which could be used to extend supported formats by defining new `Option`
 // implementations.
@@ -24,9 +26,9 @@ var (
 	TomlMarshaler Marshaler = toml.Marshal
 )
 
-// ToWriter is an `Option` constructor which creates a thunk
+// ToWriter is an `DestinationOption` constructor which creates a thunk
 // to write configuration to `r` and encode it with `f` marshaler.
-func ToWriter(w io.Writer, f Marshaler) Option {
+func ToWriter(w io.Writer, f Marshaler) DestinationOption {
 	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
@@ -43,10 +45,10 @@ func ToWriter(w io.Writer, f Marshaler) Option {
 	}
 }
 
-// ToFile is an `Option` constructor which creates a thunk
+// ToFile is an `DestinationOption` constructor which creates a thunk
 // to write configuration to file addressable by `path` with
 // content encoded with `f` marshaler.
-func ToFile(path string, f Marshaler) Option {
+func ToFile(path string, f Marshaler) DestinationOption {
 	return func(c Config) error {
 		err := expectKind(reflect.TypeOf(c), reflect.Ptr)
 		if err != nil {
@@ -68,7 +70,7 @@ func ToFile(path string, f Marshaler) Option {
 // ToURL creates a destination from URL.
 // Example URL's:
 //   - file://./config.yml
-func ToURL(u string, e Marshaler) (Option, error) {
+func ToURL(u string, e Marshaler) (DestinationOption, error) {
 	uu, err := url.Parse(u)
 	if err != nil {
 		return nil, err

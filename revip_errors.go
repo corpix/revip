@@ -3,7 +3,6 @@ package revip
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 // ErrFileNotFound should be returned if configuration file was not found.
@@ -55,15 +54,14 @@ func (e *ErrUnmarshal) Error() string {
 
 // ErrPostprocess represents an error occured at the postprocess stage (set defaults, validation, etc)
 type ErrPostprocess struct {
-	Type string
-	Path []string
+	Path string
 	Err  error
 }
 
 func (e *ErrPostprocess) Error() string {
 	return fmt.Sprintf(
 		"postprocessing failed at %s: %s",
-		strings.Join(append([]string{e.Type}, e.Path...), "."),
+		e.Path,
 		e.Err.Error(),
 	)
 }

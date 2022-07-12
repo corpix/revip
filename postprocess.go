@@ -1,148 +1,101 @@
 package revip
 
 import (
-	"fmt"
 	"reflect"
 )
 
-func Postprocess(c Config, op ...Option) error {
-	return postprocess(c, nil, op)
-}
+type PostprocessOption func(c Tree) error
 
-func postprocess(c Config, path []string, options []Option) error {
-	value := reflect.ValueOf(c)
-	valueType := reflect.TypeOf(c)
-	kind := valueType.Kind()
-
-	if kind == reflect.Ptr {
-		if value.IsNil() {
-			return nil // NOTE: skip nil's, this mean we don't have a default value
+func Postprocess(c Config, options ...PostprocessOption) error {
+	_, err := NewTree(reflect.ValueOf(c), func(t Tree) error {
+		var err error
+		for _, option := range options {
+			err = option(t)
+			if err != nil {
+				if e, ok := err.(*ErrPostprocess); ok {
+					e.Path = TreePathString(t)
+				}
+				return err
+			}
 		}
-
-		value = indirectValue(value)
-		valueType = indirectType(valueType)
-		kind = valueType.Kind()
-	}
-
-	switch kind {
-	case reflect.Struct:
-	case reflect.Array, reflect.Slice:
-	case reflect.Map:
-	default:
 		return nil
-	}
-
-	//
-
-	var err error
-	for _, option := range options {
-		err = option(c)
-		if err != nil {
-			if e, ok := err.(*ErrPostprocess); ok {
-				e.Path = path
-			}
-			return err
-		}
-	}
-
-	//
-
-	switch kind {
-	case reflect.Struct:
-		return walkStruct(c, func(v reflect.Value, xs []string) error {
-			return postprocess(
-				v.Interface(),
-				append(path, xs...),
-				options,
-			)
-		})
-	case reflect.Array, reflect.Slice:
-		for n := 0; n < value.Len(); n++ {
-			err := postprocess(
-				value.Index(n).Interface(),
-				append(path, fmt.Sprintf("[%d]", n)),
-				options,
-			)
-			if err != nil {
-				return err
-			}
-		}
-	case reflect.Map:
-		for _, k := range value.MapKeys() {
-			err := postprocess(
-				value.MapIndex(k).Interface(),
-				append(path, fmt.Sprintf("[%q]", k.String())),
-				options,
-			)
-			if err != nil {
-				return err
-			}
-
-		}
-	}
-
-	return nil
+	})
+	return err
 }
 
 //
 
-func WithDefaults() Option {
-	return func(c Config) error {
-		var err error
-
-		v, ok := c.(Defaultable)
-		if ok && !isnil(reflect.ValueOf(v)) {
-			err = expectKind(reflect.TypeOf(v), reflect.Ptr)
-			if err != nil {
-				return err
+func WithNoNilPointers() PostprocessOption {
+	return func(t Tree) error {
+		v := t.Value()
+		switch v.Kind() {
+		case reflect.Ptr:
+			if v.IsNil() {
+				v.Set(reflect.New(v.Type().Elem()))
 			}
-
-			v.Default()
+		case reflect.Slice:
+			if v.IsNil() {
+				v.Set(reflect.MakeSlice(v.Type(), 0, 0))
+			}
+		case reflect.Map:
+			if v.IsNil() {
+				v.Set(reflect.MakeMap(v.Type()))
+			}
+		default:
+			return nil
 		}
 		return nil
 	}
 }
 
-func WithValidation() Option {
-	return func(c Config) error {
-		var err error
-
-		v, ok := c.(Validatable)
-		if ok && !isnil(reflect.ValueOf(v)) {
-			err = expectKind(reflect.TypeOf(v), reflect.Ptr)
-			if err != nil {
-				return err
+func WithDefaults() PostprocessOption {
+	return func(t Tree) error {
+		v := t.Value()
+		dv, ok := v.Interface().(Defaultable)
+		if ok && v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				return nil
 			}
+			dv.Default()
+		}
+		return nil
+	}
+}
 
-			err = v.Validate()
+func WithValidation() PostprocessOption {
+	return func(t Tree) error {
+		var (
+			err error
+			v   = t.Value()
+		)
+		vv, ok := v.Interface().(Validatable)
+		if ok && v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				return nil
+			}
+			err = vv.Validate()
 			if err != nil {
-				return &ErrPostprocess{
-					Type: reflect.TypeOf(c).String(),
-					Err:  err,
-				}
+				return &ErrPostprocess{Err: err}
 			}
 		}
 		return nil
 	}
 }
 
-func WithExpansion() Option {
-	return func(c Config) error {
-		var err error
-
-		v, ok := c.(Expandable)
-		if ok && !isnil(reflect.ValueOf(v)) {
-			err = expectKind(reflect.TypeOf(v), reflect.Ptr)
-			if err != nil {
-				return err
+func WithExpansion() PostprocessOption {
+	return func(t Tree) error {
+		var (
+			err error
+			v   = t.Value()
+		)
+		ev, ok := v.Interface().(Expandable)
+		if ok && v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				return nil
 			}
-
-			err = v.Expand()
+			err = ev.Expand()
 			if err != nil {
-				return &ErrPostprocess{
-					Type: reflect.TypeOf(c).String(),
-					Err:  err,
-				}
+				return &ErrPostprocess{Err: err}
 			}
 		}
 		return nil
